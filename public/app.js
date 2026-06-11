@@ -483,15 +483,17 @@ function renderTimeline(rows) {
     let bar = '';
     if (hasDates && row.type !== 'client') {
       const left = offsetForDate(item.starts_on) * pxPerDay;
-      const width = (daysBetween(parseDate(item.starts_on), parseDate(item.ends_on)) + 1) * pxPerDay;
+      const durationDays = daysBetween(parseDate(item.starts_on), parseDate(item.ends_on)) + 1;
+      const width = durationDays * pxPerDay;
       const hasOverlap = overlaps.has(`${row.type}:${item.id}`);
       const overlap = hasOverlap ? ' overlap' : '';
       const link = item.crm_url ? `data-url="${escapeAttr(item.crm_url)}"` : '';
       const levelClass = `bar-level-${row.type}`;
       const doneMark = item.status === 'done' ? '<span class="done-mark" title="Done">✓</span>' : '';
       const overlapNote = hasOverlap ? ' · overlaps with another item' : '';
+      const taskLoadNote = row.type === 'task' ? ` · ${durationDays}d · ${formatHours(Number(item.estimated_hours || 0))} total · ${formatHours(taskHoursPerDay(item, durationDays))}/day` : ` · ${durationDays}d`;
       bar = `
-        <div class="bar ${row.type} ${levelClass}${overlap}" style="left:${left}px;width:${width}px" data-type="${row.type}" data-id="${item.id}" ${link} title="${escapeAttr(row.text)}: ${item.starts_on} - ${item.ends_on}${overlapNote}">
+        <div class="bar ${row.type} ${levelClass}${overlap}" style="left:${left}px;width:${width}px" data-type="${row.type}" data-id="${item.id}" ${link} title="${escapeAttr(row.text)}: ${item.starts_on} - ${item.ends_on}${taskLoadNote}${overlapNote}">
           <span class="handle left" data-mode="resize-left"></span>
           ${doneMark}
           <span class="bar-label">${escapeHtml(row.text)}</span>
@@ -516,6 +518,11 @@ function renderTimeline(rows) {
       openEditor(button.dataset.barEdit, Number(button.dataset.id));
     });
   });
+}
+
+function taskHoursPerDay(task, durationDays) {
+  const totalHours = Number(task.estimated_hours || 0);
+  return totalHours && durationDays ? totalHours / durationDays : 0;
 }
 
 function bindDrag(bar) {
