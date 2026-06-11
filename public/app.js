@@ -405,12 +405,14 @@ function renderNames(rows) {
     const item = row.item;
     const status = item.status ? `<span class="status-dot status-${item.status}"></span>` : '';
     const meta = rowMeta(row);
-    const draggable = ['project', 'stage', 'task'].includes(row.type) ? ' draggable="true"' : '';
+    const canDrag = ['project', 'stage', 'task'].includes(row.type);
+    const draggable = canDrag ? ' draggable="true"' : '';
     const rowData = `data-row-type="${row.type}" data-id="${item.id}"`;
     const childToggle = collapseButton(row);
     return `
       <div class="name-row row-${row.type}" ${rowData}${draggable}>
         <div class="name-main">
+          ${canDrag ? `<span class="drag-grip" title="Drag to reorder" aria-hidden="true"><i class="fa-solid fa-grip-vertical"></i></span>` : ''}
           ${childToggle}
           ${status}
           <span class="name-text" title="${escapeHtml(row.text)}">${escapeHtml(row.text)}</span>
@@ -537,7 +539,26 @@ function bindListReorder(rows) {
   let dragged = null;
 
   namesRows.querySelectorAll('.name-row[draggable="true"]').forEach((rowEl) => {
+    const grip = rowEl.querySelector('.drag-grip');
+    if (!grip) return;
+
+    rowEl.draggable = false;
+    grip.draggable = true;
+
     rowEl.addEventListener('dragstart', (event) => {
+      if (!event.target.closest('.drag-grip')) {
+        event.preventDefault();
+        return;
+      }
+      const row = rowElFor(rows, rowEl);
+      if (!row) return;
+      dragged = row;
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', `${row.type}:${row.item.id}`);
+      rowEl.classList.add('is-dragging');
+    });
+
+    grip.addEventListener('dragstart', (event) => {
       const row = rowElFor(rows, rowEl);
       if (!row) return;
       dragged = row;
@@ -554,7 +575,7 @@ function bindListReorder(rows) {
 
     rowEl.addEventListener('dragover', (event) => {
       const target = rowElFor(rows, rowEl);
-      if (!canReorderRows(dragged, target)) return;
+      if (!targetForReorder(dragged, target)) return;
       event.preventDefault();
       event.dataTransfer.dropEffect = 'move';
       rowEl.classList.add('is-drop-target');
@@ -568,13 +589,14 @@ function bindListReorder(rows) {
       event.preventDefault();
       rowEl.classList.remove('is-drop-target');
       const target = rowElFor(rows, rowEl);
-      if (!dragged || !target || Number(dragged.item.id) === Number(target.item.id)) return;
-      if (!canReorderRows(dragged, target)) {
+      const reorderTarget = targetForReorder(dragged, target);
+      if (!dragged || !reorderTarget || Number(dragged.item.id) === Number(reorderTarget.item.id)) return;
+      if (!canReorderRows(dragged, reorderTarget)) {
         setSaving('Items can be reordered only inside the same parent');
         setTimeout(() => setSaving(''), 1600);
         return;
       }
-      await reorderVisibleRows(dragged, target, rows);
+      await reorderVisibleRows(dragged, reorderTarget);
     });
   });
 }
@@ -586,6 +608,34 @@ function rowElFor(rows, rowEl) {
 function canReorderRows(dragged, target) {
   if (!dragged || !target || dragged.type !== target.type) return false;
   return reorderScope(dragged) === reorderScope(target);
+}
+
+function targetForReorder(dragged, target) {
+  if (!dragged || !target) return null;
+  if (dragged.type === target.type) return target;
+
+  if (dragged.type === 'project' && target.project) {
+    return {
+      type: 'project',
+      item: target.project,
+      client: target.client,
+      project: target.project,
+      text: target.project.name,
+    };
+  }
+
+  if (dragged.type === 'stage' && target.stage) {
+    return {
+      type: 'stage',
+      item: target.stage,
+      client: target.client,
+      project: target.project,
+      stage: target.stage,
+      text: target.stage.name,
+    };
+  }
+
+  return null;
 }
 
 function reorderScope(row) {
