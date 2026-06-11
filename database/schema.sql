@@ -17,6 +17,7 @@ CREATE TABLE projects (
     budget_hours DECIMAL(7,2) NULL,
     daily_capacity_hours DECIMAL(6,2) NULL,
     notes TEXT NULL,
+    sort_order INT NOT NULL DEFAULT 0,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_projects_client FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
@@ -68,8 +69,8 @@ CREATE TABLE tasks (
 INSERT INTO clients (name, contact, notes) VALUES
 ('Demo Client', 'owner@example.com', 'Remove this client after setup.');
 
-INSERT INTO projects (client_id, name, status, starts_on, ends_on, budget_hours, daily_capacity_hours, notes) VALUES
-(1, 'Website redesign', 'in_progress', CURRENT_DATE, DATE_ADD(CURRENT_DATE, INTERVAL 28 DAY), 60, 4, 'Demo project.');
+INSERT INTO projects (client_id, name, status, starts_on, ends_on, budget_hours, daily_capacity_hours, notes, sort_order) VALUES
+(1, 'Website redesign', 'in_progress', CURRENT_DATE, DATE_ADD(CURRENT_DATE, INTERVAL 28 DAY), 60, 4, 'Demo project.', 10);
 
 INSERT INTO stages (project_id, name, status, starts_on, ends_on, color, description, sort_order) VALUES
 (1, 'Audit and structure', 'in_progress', CURRENT_DATE, DATE_ADD(CURRENT_DATE, INTERVAL 7 DAY), '#2563eb', 'UX audit, offer, page structure.', 10),

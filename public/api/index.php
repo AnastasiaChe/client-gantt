@@ -60,8 +60,12 @@ try {
         exportData($pdo, $_GET['format'] ?? 'json');
     }
 
+    if ($action === 'reorder' && $method === 'POST') {
+        reorderItems($pdo);
+    }
+
     if ($action === 'reorder_tasks' && $method === 'POST') {
-        reorderTasks($pdo);
+        reorderItems($pdo, 'task');
     }
 
     routeCrud($pdo, $action, $method);
@@ -138,7 +142,7 @@ function routeCrud(PDO $pdo, string $action, string $method): void
     }
 
     if ($action === 'projects') {
-        crud($pdo, 'projects', $id, $method, ['client_id', 'name', 'status', 'starts_on', 'ends_on', 'budget_hours', 'daily_capacity_hours', 'notes'], ['client_id', 'name']);
+        crud($pdo, 'projects', $id, $method, ['client_id', 'name', 'status', 'starts_on', 'ends_on', 'budget_hours', 'daily_capacity_hours', 'notes', 'sort_order'], ['client_id', 'name']);
     }
 
     if ($action === 'stages') {
@@ -174,6 +178,7 @@ function crud(PDO $pdo, string $table, ?int $id, string $method, array $fields, 
         if ($table === 'tasks') {
             $data = normalizeTaskPlanning($pdo, $data);
         }
+        $data = assignSortOrderOnCreate($pdo, $table, $data);
         $columns = array_keys($data);
         $placeholders = array_fill(0, count($columns), '?');
         $sql = sprintf(
@@ -324,6 +329,24 @@ function normalizeTaskPlanning(PDO $pdo, array $data, ?int $id = null): array
     return $data;
 }
 
+function assignSortOrderOnCreate(PDO $pdo, string $table, array $data): array
+{
+    $scopeMap = [
+        'projects' => 'client_id',
+        'stages' => 'project_id',
+        'tasks' => 'stage_id',
+    ];
+    $scopeField = $scopeMap[$table] ?? null;
+    if (!$scopeField || !empty($data['sort_order']) || empty($data[$scopeField])) {
+        return $data;
+    }
+
+    $stmt = $pdo->prepare("SELECT COALESCE(MAX(sort_order), 0) FROM {$table} WHERE {$scopeField} = ?");
+    $stmt->execute([$data[$scopeField]]);
+    $data['sort_order'] = ((int) $stmt->fetchColumn()) + 10;
+    return $data;
+}
+
 function daysInclusive(string $start, string $end): int
 {
     $startDate = new DateTimeImmutable($start);
@@ -362,44 +385,55 @@ function timeline(PDO $pdo): void
 {
     json([
         'clients' => $pdo->query('SELECT * FROM clients ORDER BY name')->fetchAll(),
-        'projects' => $pdo->query('SELECT * FROM projects ORDER BY client_id, starts_on IS NULL, starts_on, id')->fetchAll(),
+        'projects' => $pdo->query('SELECT * FROM projects ORDER BY client_id, sort_order, starts_on IS NULL, starts_on, id')->fetchAll(),
         'stages' => $pdo->query('SELECT * FROM stages ORDER BY project_id, sort_order, starts_on, id')->fetchAll(),
         'tasks' => $pdo->query('SELECT * FROM tasks ORDER BY stage_id, sort_order, starts_on, id')->fetchAll(),
     ]);
 }
 
-function reorderTasks(PDO $pdo): void
+function reorderItems(PDO $pdo, ?string $forcedType = null): void
 {
     $payload = body();
-    $stageId = (int) ($payload['stage_id'] ?? 0);
-    $taskIds = $payload['task_ids'] ?? [];
+    $type = $forcedType ?: (string) ($payload['type'] ?? '');
+    $config = [
+        'project' => ['table' => 'projects', 'scope' => 'client_id', 'scope_key' => 'client_id', 'ids_key' => 'project_ids'],
+        'stage' => ['table' => 'stages', 'scope' => 'project_id', 'scope_key' => 'project_id', 'ids_key' => 'stage_ids'],
+        'task' => ['table' => 'tasks', 'scope' => 'stage_id', 'scope_key' => 'stage_id', 'ids_key' => 'task_ids'],
+    ][$type] ?? null;
 
-    if ($stageId <= 0 || !is_array($taskIds) || count($taskIds) === 0) {
-        fail('Missing stage_id or task_ids', 422);
+    if (!$config) {
+        fail('Invalid reorder type', 422);
     }
 
-    $taskIds = array_values(array_unique(array_map('intval', $taskIds)));
-    if (in_array(0, $taskIds, true)) {
-        fail('Invalid task id', 422);
+    $scopeId = (int) ($payload[$config['scope_key']] ?? 0);
+    $itemIds = $payload['item_ids'] ?? $payload[$config['ids_key']] ?? [];
+
+    if ($scopeId <= 0 || !is_array($itemIds) || count($itemIds) === 0) {
+        fail('Missing reorder scope or item_ids', 422);
     }
 
-    $placeholders = implode(',', array_fill(0, count($taskIds), '?'));
-    $stmt = $pdo->prepare("SELECT id FROM tasks WHERE stage_id = ? AND id IN ({$placeholders})");
-    $stmt->execute(array_merge([$stageId], $taskIds));
+    $itemIds = array_values(array_unique(array_map('intval', $itemIds)));
+    if (in_array(0, $itemIds, true)) {
+        fail('Invalid item id', 422);
+    }
+
+    $placeholders = implode(',', array_fill(0, count($itemIds), '?'));
+    $stmt = $pdo->prepare("SELECT id FROM {$config['table']} WHERE {$config['scope']} = ? AND id IN ({$placeholders})");
+    $stmt->execute(array_merge([$scopeId], $itemIds));
     $found = array_map('intval', array_column($stmt->fetchAll(), 'id'));
     sort($found);
-    $expected = $taskIds;
+    $expected = $itemIds;
     sort($expected);
 
     if ($found !== $expected) {
-        fail('Tasks must belong to the same stage', 422);
+        fail('Items must belong to the same parent', 422);
     }
 
     $pdo->beginTransaction();
     try {
-        $update = $pdo->prepare('UPDATE tasks SET sort_order = ? WHERE id = ? AND stage_id = ?');
-        foreach ($taskIds as $index => $taskId) {
-            $update->execute([($index + 1) * 10, $taskId, $stageId]);
+        $update = $pdo->prepare("UPDATE {$config['table']} SET sort_order = ? WHERE id = ? AND {$config['scope']} = ?");
+        foreach ($itemIds as $index => $itemId) {
+            $update->execute([($index + 1) * 10, $itemId, $scopeId]);
         }
         $pdo->commit();
     } catch (Throwable $e) {

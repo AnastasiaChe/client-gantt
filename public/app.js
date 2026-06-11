@@ -49,8 +49,9 @@ const editorFields = $('#editorFields');
 const editorTitle = $('#editorTitle');
 const editorError = $('#editorError');
 const deleteBtn = $('#deleteBtn');
+const saveMoreBtn = $('#saveMoreBtn');
 
-let editor = { type: null, id: null };
+let editor = { type: null, id: null, addMore: false };
 
 document.addEventListener('DOMContentLoaded', boot);
 
@@ -116,6 +117,10 @@ function bindGlobalEvents() {
   $('#closeEditorBtn').addEventListener('click', () => editorDialog.close());
   $('#cancelBtn').addEventListener('click', () => editorDialog.close());
   deleteBtn.addEventListener('click', deleteCurrent);
+  saveMoreBtn.addEventListener('click', () => {
+    editor.addMore = true;
+    editorForm.requestSubmit();
+  });
   editorForm.addEventListener('submit', saveCurrent);
 }
 
@@ -400,7 +405,7 @@ function renderNames(rows) {
     const item = row.item;
     const status = item.status ? `<span class="status-dot status-${item.status}"></span>` : '';
     const meta = rowMeta(row);
-    const draggable = row.type === 'task' ? ' draggable="true"' : '';
+    const draggable = ['project', 'stage', 'task'].includes(row.type) ? ' draggable="true"' : '';
     const rowData = `data-row-type="${row.type}" data-id="${item.id}"`;
     const childToggle = collapseButton(row);
     return `
@@ -426,7 +431,7 @@ function renderNames(rows) {
   namesRows.querySelectorAll('[data-collapse]').forEach((button) => {
     button.addEventListener('click', () => toggleCollapse(button.dataset.collapse, Number(button.dataset.id)));
   });
-  bindTaskListReorder(rows);
+  bindListReorder(rows);
 }
 
 function rowMeta(row) {
@@ -528,16 +533,16 @@ function toggleCollapse(setName, id) {
   render();
 }
 
-function bindTaskListReorder(rows) {
+function bindListReorder(rows) {
   let dragged = null;
 
-  namesRows.querySelectorAll('.row-task[draggable="true"]').forEach((rowEl) => {
+  namesRows.querySelectorAll('.name-row[draggable="true"]').forEach((rowEl) => {
     rowEl.addEventListener('dragstart', (event) => {
-      const row = rows.find((entry) => entry.type === 'task' && Number(entry.item.id) === Number(rowEl.dataset.id));
+      const row = rowElFor(rows, rowEl);
       if (!row) return;
       dragged = row;
       event.dataTransfer.effectAllowed = 'move';
-      event.dataTransfer.setData('text/plain', String(row.item.id));
+      event.dataTransfer.setData('text/plain', `${row.type}:${row.item.id}`);
       rowEl.classList.add('is-dragging');
     });
 
@@ -548,7 +553,8 @@ function bindTaskListReorder(rows) {
     });
 
     rowEl.addEventListener('dragover', (event) => {
-      if (!dragged || Number(dragged.stage?.id) !== Number(rowElFor(rows, rowEl)?.stage?.id)) return;
+      const target = rowElFor(rows, rowEl);
+      if (!canReorderRows(dragged, target)) return;
       event.preventDefault();
       event.dataTransfer.dropEffect = 'move';
       rowEl.classList.add('is-drop-target');
@@ -563,24 +569,46 @@ function bindTaskListReorder(rows) {
       rowEl.classList.remove('is-drop-target');
       const target = rowElFor(rows, rowEl);
       if (!dragged || !target || Number(dragged.item.id) === Number(target.item.id)) return;
-      if (Number(dragged.stage?.id) !== Number(target.stage?.id)) {
-        setSaving('Tasks can be reordered only inside one stage');
+      if (!canReorderRows(dragged, target)) {
+        setSaving('Items can be reordered only inside the same parent');
         setTimeout(() => setSaving(''), 1600);
         return;
       }
-      await reorderVisibleTasks(dragged, target, rows);
+      await reorderVisibleRows(dragged, target, rows);
     });
   });
 }
 
 function rowElFor(rows, rowEl) {
-  return rows.find((entry) => entry.type === 'task' && Number(entry.item.id) === Number(rowEl.dataset.id));
+  return rows.find((entry) => entry.type === rowEl.dataset.rowType && Number(entry.item.id) === Number(rowEl.dataset.id));
 }
 
-async function reorderVisibleTasks(dragged, target, rows) {
-  const stageId = Number(dragged.stage.id);
-  const taskRows = rows.filter((entry) => entry.type === 'task' && Number(entry.stage?.id) === stageId);
-  const orderedIds = taskRows.map((entry) => Number(entry.item.id));
+function canReorderRows(dragged, target) {
+  if (!dragged || !target || dragged.type !== target.type) return false;
+  return reorderScope(dragged) === reorderScope(target);
+}
+
+function reorderScope(row) {
+  if (row.type === 'project') return `client:${row.client?.id}`;
+  if (row.type === 'stage') return `project:${row.project?.id}`;
+  if (row.type === 'task') return `stage:${row.stage?.id}`;
+  return '';
+}
+
+function reorderPayload(type, scopeId, orderedIds) {
+  const scopeKeys = { project: 'client_id', stage: 'project_id', task: 'stage_id' };
+  return { type, [scopeKeys[type]]: scopeId, item_ids: orderedIds };
+}
+
+async function reorderVisibleRows(dragged, target) {
+  const scopeIds = {
+    project: Number(dragged.client?.id),
+    stage: Number(dragged.project?.id),
+    task: Number(dragged.stage?.id),
+  };
+  const scopeId = scopeIds[dragged.type];
+  const itemRows = state.rows.filter((entry) => entry.type === dragged.type && reorderScope(entry) === reorderScope(dragged));
+  const orderedIds = itemRows.map((entry) => Number(entry.item.id));
   const from = orderedIds.indexOf(Number(dragged.item.id));
   const to = orderedIds.indexOf(Number(target.item.id));
   if (from < 0 || to < 0 || from === to) return;
@@ -590,12 +618,12 @@ async function reorderVisibleTasks(dragged, target, rows) {
 
   try {
     setSaving('Saving order...');
-    await api('reorder_tasks', { method: 'POST', body: { stage_id: stageId, task_ids: orderedIds } });
+    await api('reorder', { method: 'POST', body: reorderPayload(dragged.type, scopeId, orderedIds) });
     orderedIds.forEach((id, index) => {
-      const task = state.tasks.find((entry) => Number(entry.id) === id);
-      if (task) task.sort_order = (index + 1) * 10;
+      const item = getCollection(dragged.type).find((entry) => Number(entry.id) === id);
+      if (item) item.sort_order = (index + 1) * 10;
     });
-    state.tasks.sort((a, b) => Number(a.stage_id) - Number(b.stage_id) || Number(a.sort_order) - Number(b.sort_order) || Number(a.id) - Number(b.id));
+    sortLocalCollection(dragged.type);
     buildRows();
     render();
     setSaving('Order saved');
@@ -604,6 +632,12 @@ async function reorderVisibleTasks(dragged, target, rows) {
     setSaving(error.message);
     await loadTimeline();
   }
+}
+
+function sortLocalCollection(type) {
+  const collection = getCollection(type);
+  const parentKey = type === 'project' ? 'client_id' : type === 'stage' ? 'project_id' : 'stage_id';
+  collection.sort((a, b) => Number(a[parentKey]) - Number(b[parentKey]) || Number(a.sort_order) - Number(b.sort_order) || Number(a.id) - Number(b.id));
 }
 
 function renderTimeline(rows) {
@@ -732,11 +766,12 @@ function bindDrag(bar) {
   });
 }
 
-function openEditor(type, id = null) {
-  editor = { type, id };
+function openEditor(type, id = null, defaults = {}) {
+  editor = { type, id, addMore: false };
   editorError.textContent = '';
   deleteBtn.classList.toggle('is-hidden', !id);
-  const item = id ? getCollection(type).find((entry) => Number(entry.id) === id) : {};
+  saveMoreBtn.classList.toggle('is-hidden', Boolean(id) || !['project', 'stage', 'task'].includes(type));
+  const item = id ? getCollection(type).find((entry) => Number(entry.id) === id) : defaults;
   editorTitle.textContent = `${id ? 'Edit' : 'Add'} ${type}`;
   editorFields.innerHTML = fieldsFor(type, item).map(fieldHtml).join('');
   editorDialog.showModal();
@@ -745,16 +780,17 @@ function openEditor(type, id = null) {
 
 function bindTaskPlanningFields(type) {
   if (type !== 'task') return;
-  const modeInput = editorForm.elements.planning_mode;
+  const modeInputs = Array.from(editorForm.querySelectorAll('input[name="planning_mode"]'));
   const totalInput = editorForm.elements.estimated_hours;
   const dailyInput = editorForm.elements.hours_per_day;
   const startInput = editorForm.elements.starts_on;
   const endInput = editorForm.elements.ends_on;
-  if (!modeInput || !totalInput || !dailyInput || !startInput || !endInput) return;
+  if (!modeInputs.length || !totalInput || !dailyInput || !startInput || !endInput) return;
 
   const recalculate = () => {
     const duration = formDurationDays(startInput.value, endInput.value);
-    const isDaily = modeInput.value === 'daily';
+    const mode = modeInputs.find((input) => input.checked)?.value || 'total';
+    const isDaily = mode === 'daily';
     totalInput.readOnly = isDaily;
     dailyInput.readOnly = !isDaily;
     totalInput.title = isDaily ? 'Calculated from hours/day and duration' : '';
@@ -768,7 +804,7 @@ function bindTaskPlanningFields(type) {
     }
   };
 
-  [modeInput, totalInput, dailyInput, startInput, endInput].forEach((input) => {
+  [...modeInputs, totalInput, dailyInput, startInput, endInput].forEach((input) => {
     input.addEventListener('input', recalculate);
     input.addEventListener('change', recalculate);
   });
@@ -821,7 +857,7 @@ function fieldsFor(type, item) {
     { name: 'stage_id', label: 'Stage', type: 'select', required: true, options: stageOptions(), value: item.stage_id },
     { name: 'name', label: 'Name', required: true, value: item.name },
     commonStatus,
-    { name: 'planning_mode', label: 'Planning mode', type: 'select', options: planningModes, value: item.planning_mode || 'total' },
+    { name: 'planning_mode', label: 'Planning mode', type: 'radio', options: planningModes, value: item.planning_mode || 'total', wide: true },
     { name: 'estimated_hours', label: 'Total hours', type: 'number', min: 0, step: 0.25, value: item.estimated_hours || 0 },
     { name: 'hours_per_day', label: 'Hours/day', type: 'number', min: 0, step: 0.25, value: item.hours_per_day || 0 },
     { name: 'starts_on', label: 'Start', type: 'date', required: true, value: item.starts_on || toIso(new Date()) },
@@ -847,6 +883,15 @@ function fieldHtml(field) {
     }).join('');
     return `<label${wide}>${field.label}<select name="${field.name}"${required}>${options}</select></label>`;
   }
+  if (field.type === 'radio') {
+    const options = field.options.map((option) => `
+      <label class="radio-chip">
+        <input type="radio" name="${field.name}" value="${escapeAttr(option.id)}" ${String(option.id) === String(field.value) ? 'checked' : ''}${required}>
+        <span>${escapeHtml(option.label)}</span>
+      </label>
+    `).join('');
+    return `<div class="field-group${field.wide ? ' wide' : ''}"><span>${field.label}</span><div class="radio-tabs">${options}</div></div>`;
+  }
   const min = field.min !== undefined ? ` min="${escapeAttr(field.min)}"` : '';
   const step = field.step !== undefined ? ` step="${escapeAttr(field.step)}"` : '';
   return `<label${wide}>${field.label}<input name="${field.name}" type="${field.type || 'text'}" value="${value}"${min}${step}${required}></label>`;
@@ -856,6 +901,8 @@ async function saveCurrent(event) {
   event.preventDefault();
   editorError.textContent = '';
   const body = Object.fromEntries(new FormData(editorForm));
+  const addMore = editor.addMore;
+  editor.addMore = false;
   try {
     validateClientSide(body);
     const endpoint = `${editor.type}s`;
@@ -868,10 +915,47 @@ async function saveCurrent(event) {
     await loadTimeline();
     setSaving(isCreate ? `Created #${result.id || ''}` : 'Saved');
     setTimeout(() => setSaving(''), 1600);
+    if (addMore && isCreate) {
+      openEditor(editor.type, null, nextDefaults(editor.type, body));
+    }
   } catch (error) {
     editorError.textContent = error.message;
     showAppError(`Save failed: ${error.message}`);
   }
+}
+
+function nextDefaults(type, previous) {
+  if (type === 'project') {
+    return {
+      client_id: previous.client_id,
+      status: previous.status || 'planned',
+      starts_on: previous.starts_on,
+      ends_on: previous.ends_on,
+      budget_hours: previous.budget_hours,
+      daily_capacity_hours: previous.daily_capacity_hours,
+    };
+  }
+  if (type === 'stage') {
+    return {
+      project_id: previous.project_id,
+      status: previous.status || 'planned',
+      color: previous.color || '#2563eb',
+      starts_on: previous.starts_on,
+      ends_on: previous.ends_on,
+    };
+  }
+  if (type === 'task') {
+    return {
+      stage_id: previous.stage_id,
+      status: previous.status || 'planned',
+      planning_mode: previous.planning_mode || 'total',
+      estimated_hours: previous.estimated_hours,
+      hours_per_day: previous.hours_per_day,
+      starts_on: previous.starts_on,
+      ends_on: previous.ends_on,
+    };
+  }
+  return {};
 }
 
 async function deleteCurrent() {
