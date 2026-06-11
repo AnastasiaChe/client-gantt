@@ -223,6 +223,7 @@ Daily load colors:
 
 ## Timeline Interaction
 
+- Use `Today's agenda` near the page title to see active tasks scheduled for today with client, project, task, and planned hours.
 - Drag timeline bars to move dates.
 - Drag bar edges to resize the date range.
 - Hover a timeline bar to show the edit pencil.
@@ -232,6 +233,8 @@ Daily load colors:
 - Drag task rows to reorder tasks inside the same stage.
 - Use chevrons on projects and stages to collapse or expand nested rows.
 - Use `Save and Add More` when creating projects, stages, or tasks to keep adding items inside the same parent.
+
+Dense timeline labels omit the `h` suffix to save horizontal space. Tooltips and the agenda still show readable hour units.
 
 ## Backups
 
