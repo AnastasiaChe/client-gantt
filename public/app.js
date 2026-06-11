@@ -3,6 +3,7 @@ const dayMs = 24 * 60 * 60 * 1000;
 const pxPerDay = 28;
 const dailyCapacityHours = 18;
 const leftColumnStorageKey = 'clientGantt.leftColumnWidth';
+const collapsedStorageKey = 'clientGantt.collapsedRows';
 const defaultLeftColumnWidth = 430;
 const minLeftColumnWidth = 260;
 const statuses = ['planned', 'in_progress', 'waiting', 'done', 'paused'];
@@ -61,6 +62,7 @@ document.addEventListener('DOMContentLoaded', boot);
 async function boot() {
   bindGlobalEvents();
   initColumnResize();
+  loadCollapsedState();
   try {
     const me = await api('me');
     if (me.authenticated) {
@@ -190,7 +192,11 @@ async function loadTimeline() {
     showAppError('');
     setSaving('Loading...');
     const data = await api('timeline');
-    Object.assign(state, data);
+    state.clients = data.clients || [];
+    state.projects = data.projects || [];
+    state.stages = data.stages || [];
+    state.tasks = data.tasks || [];
+    pruneCollapsedState();
     updateClientFilter();
     buildRows();
     render();
@@ -580,7 +586,34 @@ function toggleCollapse(setName, id) {
   } else {
     set.add(id);
   }
+  saveCollapsedState();
   render();
+}
+
+function loadCollapsedState() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(collapsedStorageKey) || '{}');
+    state.collapsed.projects = new Set((saved.projects || []).map(Number).filter(Boolean));
+    state.collapsed.stages = new Set((saved.stages || []).map(Number).filter(Boolean));
+  } catch (error) {
+    state.collapsed.projects = new Set();
+    state.collapsed.stages = new Set();
+  }
+}
+
+function saveCollapsedState() {
+  localStorage.setItem(collapsedStorageKey, JSON.stringify({
+    projects: [...state.collapsed.projects],
+    stages: [...state.collapsed.stages],
+  }));
+}
+
+function pruneCollapsedState() {
+  const projectIds = new Set(state.projects.map((project) => Number(project.id)));
+  const stageIds = new Set(state.stages.map((stage) => Number(stage.id)));
+  state.collapsed.projects = new Set([...state.collapsed.projects].filter((id) => projectIds.has(Number(id))));
+  state.collapsed.stages = new Set([...state.collapsed.stages].filter((id) => stageIds.has(Number(id))));
+  saveCollapsedState();
 }
 
 function bindListReorder(rows) {
