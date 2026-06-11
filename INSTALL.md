@@ -174,6 +174,14 @@ Daily load colors:
 - 14-18h: heavy
 - above 18h: overbooked
 
+## Timeline Interaction
+
+- Drag timeline bars to move dates.
+- Drag bar edges to resize the date range.
+- Hover a timeline bar to show the edit pencil.
+- Drag task rows in the left list to reorder tasks inside the same stage.
+- Use chevrons on projects and stages to collapse or expand nested rows.
+
 ## Backups
 
 Open the gear menu and use:

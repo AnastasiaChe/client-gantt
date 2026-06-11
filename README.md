@@ -38,6 +38,9 @@ For manual setup, see `INSTALL.md`.
 - Compact day/week Gantt timeline.
 - Drag bars to move dates.
 - Drag left/right edges to resize dates.
+- Drag tasks in the left list to reorder them inside a stage.
+- Collapse and expand projects and stages.
+- Hover timeline bars to reveal an edit pencil.
 - CRM URL fields for stages and tasks.
 - Search and filters.
 - Gear menu for CSV/JSON backups and debug tools.
