@@ -25,6 +25,7 @@ header('Pragma: no-cache');
 header('Expires: 0');
 
 const STATUSES = ['planned', 'in_progress', 'waiting', 'done', 'paused'];
+const PLANNING_MODES = ['total', 'daily'];
 
 try {
     $pdo = db($config);
@@ -137,7 +138,7 @@ function routeCrud(PDO $pdo, string $action, string $method): void
     }
 
     if ($action === 'projects') {
-        crud($pdo, 'projects', $id, $method, ['client_id', 'name', 'status', 'starts_on', 'ends_on', 'notes'], ['client_id', 'name']);
+        crud($pdo, 'projects', $id, $method, ['client_id', 'name', 'status', 'starts_on', 'ends_on', 'budget_hours', 'daily_capacity_hours', 'notes'], ['client_id', 'name']);
     }
 
     if ($action === 'stages') {
@@ -145,7 +146,7 @@ function routeCrud(PDO $pdo, string $action, string $method): void
     }
 
     if ($action === 'tasks') {
-        crud($pdo, 'tasks', $id, $method, ['stage_id', 'name', 'status', 'starts_on', 'ends_on', 'estimated_hours', 'crm_url', 'description', 'sort_order'], ['stage_id', 'name', 'starts_on', 'ends_on']);
+        crud($pdo, 'tasks', $id, $method, ['stage_id', 'name', 'status', 'starts_on', 'ends_on', 'planning_mode', 'hours_per_day', 'estimated_hours', 'crm_url', 'description', 'sort_order'], ['stage_id', 'name', 'starts_on', 'ends_on']);
     }
 
     fail('Unknown endpoint', 404);
@@ -170,6 +171,9 @@ function crud(PDO $pdo, string $table, ?int $id, string $method, array $fields, 
 
     if ($method === 'POST') {
         $data = sanitize($table, body(), $fields, $required);
+        if ($table === 'tasks') {
+            $data = normalizeTaskPlanning($pdo, $data);
+        }
         $columns = array_keys($data);
         $placeholders = array_fill(0, count($columns), '?');
         $sql = sprintf(
@@ -190,6 +194,9 @@ function crud(PDO $pdo, string $table, ?int $id, string $method, array $fields, 
         $data = sanitize($table, body(), $fields, [], true);
         if (!$data) {
             fail('No fields to update', 422);
+        }
+        if ($table === 'tasks') {
+            $data = normalizeTaskPlanning($pdo, $data, $id);
         }
         $assignments = array_map(fn ($field) => "{$field} = ?", array_keys($data));
         $values = array_values($data);
@@ -232,10 +239,21 @@ function sanitize(string $table, array $input, array $fields, array $required, b
             $value = $value === null ? null : (int) $value;
         }
 
-        if ($field === 'estimated_hours') {
+        if (in_array($field, ['estimated_hours', 'hours_per_day', 'budget_hours', 'daily_capacity_hours'], true)) {
             $value = $value === null ? 0 : (float) $value;
             if ($value < 0 || $value > 9999) {
-                fail('Estimated hours must be between 0 and 9999', 422);
+                fail('Hours must be between 0 and 9999', 422);
+            }
+        }
+
+        if (in_array($field, ['budget_hours', 'daily_capacity_hours'], true) && $input[$field] === '') {
+            $value = null;
+        }
+
+        if ($field === 'planning_mode') {
+            $value = $value ?: 'total';
+            if (!in_array($value, PLANNING_MODES, true)) {
+                fail('Invalid planning mode', 422);
             }
         }
 
@@ -271,6 +289,46 @@ function sanitize(string $table, array $input, array $fields, array $required, b
 
     validateDateRange($data, $table, $partial);
     return $data;
+}
+
+function normalizeTaskPlanning(PDO $pdo, array $data, ?int $id = null): array
+{
+    $base = [];
+    if ($id) {
+        $stmt = $pdo->prepare('SELECT starts_on, ends_on, planning_mode, hours_per_day, estimated_hours FROM tasks WHERE id = ?');
+        $stmt->execute([$id]);
+        $base = $stmt->fetch() ?: [];
+    }
+
+    $merged = array_merge($base, $data);
+    $start = $merged['starts_on'] ?? null;
+    $end = $merged['ends_on'] ?? null;
+    if (!$start || !$end) {
+        return $data;
+    }
+
+    $duration = daysInclusive((string) $start, (string) $end);
+    $mode = (string) ($merged['planning_mode'] ?? 'total');
+
+    if ($mode === 'daily') {
+        $hoursPerDay = round((float) ($merged['hours_per_day'] ?? 0), 2);
+        $data['hours_per_day'] = $hoursPerDay;
+        $data['estimated_hours'] = round($hoursPerDay * $duration, 2);
+        return $data;
+    }
+
+    $estimatedHours = round((float) ($merged['estimated_hours'] ?? 0), 2);
+    $data['estimated_hours'] = $estimatedHours;
+    $data['hours_per_day'] = round($estimatedHours / max($duration, 1), 2);
+    $data['planning_mode'] = 'total';
+    return $data;
+}
+
+function daysInclusive(string $start, string $end): int
+{
+    $startDate = new DateTimeImmutable($start);
+    $endDate = new DateTimeImmutable($end);
+    return max((int) $startDate->diff($endDate)->days + 1, 1);
 }
 
 function validateDate(string $date): void

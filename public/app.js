@@ -13,6 +13,10 @@ const statusLabels = {
   done: 'Done',
   paused: 'Paused',
 };
+const planningModes = [
+  { id: 'total', label: 'Total hours' },
+  { id: 'daily', label: 'Hours per day' },
+];
 
 const state = {
   clients: [],
@@ -364,12 +368,11 @@ function renderHeader() {
 function calculateDailyLoad() {
   return state.tasks.reduce((acc, task) => {
     if (!task.starts_on || !task.ends_on || task.status === 'done') return acc;
-    const totalHours = Number(task.estimated_hours || 0);
-    if (!totalHours) return acc;
     const start = parseDate(task.starts_on);
     const end = parseDate(task.ends_on);
     const duration = daysBetween(start, end) + 1;
-    const hoursPerDay = totalHours / Math.max(duration, 1);
+    const hoursPerDay = taskHoursPerDay(task, duration);
+    if (!hoursPerDay) return acc;
 
     for (let i = 0; i < duration; i++) {
       const iso = toIso(addDays(start, i));
@@ -396,7 +399,7 @@ function renderNames(rows) {
   namesRows.innerHTML = rows.map((row) => {
     const item = row.item;
     const status = item.status ? `<span class="status-dot status-${item.status}"></span>` : '';
-    const meta = row.type === 'client' ? item.contact || '' : statusLabels[item.status] || '';
+    const meta = rowMeta(row);
     const draggable = row.type === 'task' ? ' draggable="true"' : '';
     const rowData = `data-row-type="${row.type}" data-id="${item.id}"`;
     const childToggle = collapseButton(row);
@@ -424,6 +427,82 @@ function renderNames(rows) {
     button.addEventListener('click', () => toggleCollapse(button.dataset.collapse, Number(button.dataset.id)));
   });
   bindTaskListReorder(rows);
+}
+
+function rowMeta(row) {
+  if (row.type === 'client') return row.item.contact || '';
+  if (row.type === 'project') {
+    return [statusLabels[row.item.status], projectLoadSummary(row.item)].filter(Boolean).join(' · ');
+  }
+  if (row.type === 'task') {
+    return [statusLabels[row.item.status], taskModeSummary(row.item)].filter(Boolean).join(' · ');
+  }
+  return statusLabels[row.item.status] || '';
+}
+
+function projectLoadSummary(project) {
+  const projectStages = state.stages.filter((stage) => Number(stage.project_id) === Number(project.id));
+  const stageIds = new Set(projectStages.map((stage) => Number(stage.id)));
+  const allTasks = state.tasks.filter((task) => stageIds.has(Number(task.stage_id)));
+  const activeTasks = allTasks.filter((task) => task.status !== 'done');
+  const planned = allTasks.reduce((sum, task) => sum + Number(task.estimated_hours || 0), 0);
+  const doneHours = allTasks
+    .filter((task) => task.status === 'done')
+    .reduce((sum, task) => sum + Number(task.estimated_hours || 0), 0);
+  const parts = [];
+  if (Number(project.budget_hours || 0) > 0) {
+    const budget = Number(project.budget_hours);
+    parts.push(`${formatHours(planned)} / ${formatHours(budget)}`);
+    const daysLeft = project.ends_on ? daysFromToday(project.ends_on) : 0;
+    if (daysLeft > 0) {
+      const remaining = Math.max(budget - doneHours, 0);
+      parts.push(`need ${formatHours(remaining / daysLeft)}/day`);
+    } else if (!project.ends_on) {
+      parts.push('ongoing');
+    }
+  } else if (planned > 0) {
+    parts.push(`${formatHours(planned)} planned`);
+  } else if (!project.ends_on) {
+    parts.push('ongoing');
+  }
+  if (Number(project.daily_capacity_hours || 0) > 0) {
+    const capacity = Number(project.daily_capacity_hours);
+    const maxDailyLoad = maxProjectDailyLoad(activeTasks);
+    parts.push(`max ${formatHours(capacity)}/day`);
+    if (maxDailyLoad > capacity) {
+      parts.push(`over daily ${formatHours(maxDailyLoad)}`);
+    }
+  }
+  if (Number(project.budget_hours || 0) > 0 && planned > Number(project.budget_hours)) {
+    parts.push('over budget');
+  }
+  return parts.join(' · ');
+}
+
+function maxProjectDailyLoad(tasks) {
+  const load = {};
+  tasks.forEach((task) => {
+    if (!task.starts_on || !task.ends_on || task.status === 'done') return;
+    const start = parseDate(task.starts_on);
+    const end = parseDate(task.ends_on);
+    const duration = daysBetween(start, end) + 1;
+    const hoursPerDay = taskHoursPerDay(task, duration);
+    for (let i = 0; i < duration; i++) {
+      const iso = toIso(addDays(start, i));
+      load[iso] = (load[iso] || 0) + hoursPerDay;
+    }
+  });
+  return Math.max(0, ...Object.values(load));
+}
+
+function daysFromToday(endDate) {
+  return Math.max(daysBetween(stripTime(new Date()), parseDate(endDate)) + 1, 0);
+}
+
+function taskModeSummary(task) {
+  if (!task.starts_on || !task.ends_on) return '';
+  const duration = daysBetween(parseDate(task.starts_on), parseDate(task.ends_on)) + 1;
+  return `${duration}d · ${formatHours(taskHoursPerDay(task, duration))}/day`;
 }
 
 function collapseButton(row) {
@@ -547,7 +626,7 @@ function renderTimeline(rows) {
       const levelClass = `bar-level-${row.type}`;
       const doneMark = item.status === 'done' ? '<span class="done-mark" title="Done">✓</span>' : '';
       const overlapNote = hasOverlap ? ' · overlaps with another item' : '';
-      const taskLoadNote = row.type === 'task' ? ` · ${durationDays}d · ${formatHours(Number(item.estimated_hours || 0))} total · ${formatHours(taskHoursPerDay(item, durationDays))}/day` : ` · ${durationDays}d`;
+      const taskLoadNote = row.type === 'task' ? ` · ${durationDays}d · ${formatHours(Number(item.estimated_hours || 0))} total · ${formatHours(taskHoursPerDay(item, durationDays))}/day · ${item.planning_mode === 'daily' ? 'auto from daily hours' : 'fixed total'}` : ` · ${durationDays}d`;
       bar = `
         <div class="bar ${row.type} ${levelClass}${overlap}" style="left:${left}px;width:${width}px" data-type="${row.type}" data-id="${item.id}" ${link} title="${escapeAttr(row.text)}: ${item.starts_on} - ${item.ends_on}${taskLoadNote}${overlapNote}">
           <span class="handle left" data-mode="resize-left"></span>
@@ -577,6 +656,9 @@ function renderTimeline(rows) {
 }
 
 function taskHoursPerDay(task, durationDays) {
+  if (task.planning_mode === 'daily') {
+    return Number(task.hours_per_day || 0);
+  }
   const totalHours = Number(task.estimated_hours || 0);
   return totalHours && durationDays ? totalHours / durationDays : 0;
 }
@@ -636,10 +718,7 @@ function bindDrag(bar) {
       try {
         setSaving('Saving...');
         await api(`${type}s`, { method: 'PATCH', id, body: { starts_on, ends_on } });
-        item.starts_on = starts_on;
-        item.ends_on = ends_on;
-        buildRows();
-        render();
+        await loadTimeline();
         setSaving('Saved');
         setTimeout(() => setSaving(''), 1400);
       } catch (error) {
@@ -661,6 +740,48 @@ function openEditor(type, id = null) {
   editorTitle.textContent = `${id ? 'Edit' : 'Add'} ${type}`;
   editorFields.innerHTML = fieldsFor(type, item).map(fieldHtml).join('');
   editorDialog.showModal();
+  bindTaskPlanningFields(type);
+}
+
+function bindTaskPlanningFields(type) {
+  if (type !== 'task') return;
+  const modeInput = editorForm.elements.planning_mode;
+  const totalInput = editorForm.elements.estimated_hours;
+  const dailyInput = editorForm.elements.hours_per_day;
+  const startInput = editorForm.elements.starts_on;
+  const endInput = editorForm.elements.ends_on;
+  if (!modeInput || !totalInput || !dailyInput || !startInput || !endInput) return;
+
+  const recalculate = () => {
+    const duration = formDurationDays(startInput.value, endInput.value);
+    const isDaily = modeInput.value === 'daily';
+    totalInput.readOnly = isDaily;
+    dailyInput.readOnly = !isDaily;
+    totalInput.title = isDaily ? 'Calculated from hours/day and duration' : '';
+    dailyInput.title = isDaily ? '' : 'Calculated from total hours and duration';
+
+    if (!duration) return;
+    if (isDaily) {
+      totalInput.value = roundHours(Number(dailyInput.value || 0) * duration);
+    } else {
+      dailyInput.value = roundHours(Number(totalInput.value || 0) / duration);
+    }
+  };
+
+  [modeInput, totalInput, dailyInput, startInput, endInput].forEach((input) => {
+    input.addEventListener('input', recalculate);
+    input.addEventListener('change', recalculate);
+  });
+  recalculate();
+}
+
+function formDurationDays(start, end) {
+  if (!start || !end || end < start) return 0;
+  return daysBetween(parseDate(start), parseDate(end)) + 1;
+}
+
+function roundHours(value) {
+  return Number.isFinite(value) ? (Math.round(value * 100) / 100).toString() : '0';
 }
 
 function fieldsFor(type, item) {
@@ -679,6 +800,8 @@ function fieldsFor(type, item) {
       commonStatus,
       { name: 'starts_on', label: 'Start', type: 'date', value: item.starts_on },
       { name: 'ends_on', label: 'End', type: 'date', value: item.ends_on },
+      { name: 'budget_hours', label: 'Budget hours', type: 'number', min: 0, step: 0.25, value: item.budget_hours },
+      { name: 'daily_capacity_hours', label: 'Max hours/day', type: 'number', min: 0, step: 0.25, value: item.daily_capacity_hours },
       { name: 'notes', label: 'Notes', type: 'textarea', wide: true, value: item.notes },
     ];
   }
@@ -698,7 +821,9 @@ function fieldsFor(type, item) {
     { name: 'stage_id', label: 'Stage', type: 'select', required: true, options: stageOptions(), value: item.stage_id },
     { name: 'name', label: 'Name', required: true, value: item.name },
     commonStatus,
-    { name: 'estimated_hours', label: 'Estimated hours', type: 'number', min: 0, step: 0.25, value: item.estimated_hours || 0 },
+    { name: 'planning_mode', label: 'Planning mode', type: 'select', options: planningModes, value: item.planning_mode || 'total' },
+    { name: 'estimated_hours', label: 'Total hours', type: 'number', min: 0, step: 0.25, value: item.estimated_hours || 0 },
+    { name: 'hours_per_day', label: 'Hours/day', type: 'number', min: 0, step: 0.25, value: item.hours_per_day || 0 },
     { name: 'starts_on', label: 'Start', type: 'date', required: true, value: item.starts_on || toIso(new Date()) },
     { name: 'ends_on', label: 'End', type: 'date', required: true, value: item.ends_on || toIso(addDays(new Date(), 3)) },
     { name: 'crm_url', label: 'CRM URL', type: 'url', wide: true, value: item.crm_url },
