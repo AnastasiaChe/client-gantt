@@ -516,7 +516,7 @@ function projectLoadSummary(project) {
       parts.push('ongoing');
     }
   } else if (planned > 0) {
-    parts.push(`${formatHoursCompact(planned)} planned`);
+    parts.push(formatHours(planned));
   } else if (!project.ends_on) {
     parts.push('ongoing');
   }
