@@ -7,7 +7,7 @@
   <title>Client Gantt</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-  <link rel="stylesheet" href="styles.css?v=20260612-1225">
+  <link rel="stylesheet" href="styles.css?v=20260612-1245">
 </head>
 <body>
   <main id="login" class="login is-hidden">
@@ -33,7 +33,13 @@
     <header class="topbar">
       <div>
         <p class="eyebrow">Client planning</p>
-        <h1>Projects timeline</h1>
+        <div class="title-row">
+          <h1>Projects timeline</h1>
+          <button id="agendaBtn" class="secondary agenda-trigger" type="button">
+            <i class="fa-solid fa-list-check" aria-hidden="true"></i>
+            Today's agenda
+          </button>
+        </div>
       </div>
       <div class="top-actions">
         <button id="addClientBtn" class="level-btn level-client">+ Client</button>
@@ -119,6 +125,32 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=20260612-1225"></script>
+  <dialog id="agendaDialog">
+    <section class="agenda-panel">
+      <header>
+        <div>
+          <p class="eyebrow">Today</p>
+          <h2>Today's agenda</h2>
+        </div>
+        <button type="button" class="icon-button" id="closeAgendaBtn" aria-label="Close">×</button>
+      </header>
+      <div id="agendaSummary" class="agenda-summary"></div>
+      <div class="agenda-table-wrap">
+        <table class="agenda-table">
+          <thead>
+            <tr>
+              <th>Client</th>
+              <th>Project</th>
+              <th>Task</th>
+              <th>Hours</th>
+            </tr>
+          </thead>
+          <tbody id="agendaRows"></tbody>
+        </table>
+      </div>
+    </section>
+  </dialog>
+
+  <script src="app.js?v=20260612-1245"></script>
 </body>
 </html>

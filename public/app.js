@@ -50,6 +50,9 @@ const editorTitle = $('#editorTitle');
 const editorError = $('#editorError');
 const deleteBtn = $('#deleteBtn');
 const saveMoreBtn = $('#saveMoreBtn');
+const agendaDialog = $('#agendaDialog');
+const agendaRows = $('#agendaRows');
+const agendaSummary = $('#agendaSummary');
 
 let editor = { type: null, id: null, addMore: false };
 
@@ -106,6 +109,8 @@ function bindGlobalEvents() {
     render();
   });
   $('#todayBtn').addEventListener('click', scrollToday);
+  $('#agendaBtn').addEventListener('click', openAgenda);
+  $('#closeAgendaBtn').addEventListener('click', () => agendaDialog.close());
   $('#resetFiltersBtn').addEventListener('click', resetFilters);
   $('#debugBtn').addEventListener('click', runDebug);
   $('#copyDebugBtn').addEventListener('click', copyDebug);
@@ -331,6 +336,45 @@ async function copyDebug() {
   }
 }
 
+function openAgenda() {
+  const today = toIso(new Date());
+  const items = todayAgendaItems(today);
+  const totalHours = items.reduce((sum, item) => sum + item.hours, 0);
+
+  agendaSummary.textContent = `${today} · ${items.length} tasks · ${formatHours(totalHours)} planned`;
+  agendaRows.innerHTML = items.length
+    ? items.map((item) => `
+      <tr>
+        <td>${escapeHtml(item.client)}</td>
+        <td>${escapeHtml(item.project)}</td>
+        <td>${escapeHtml(item.task)}</td>
+        <td>${formatHours(item.hours)}</td>
+      </tr>
+    `).join('')
+    : '<tr><td class="agenda-empty" colspan="4">No active tasks planned for today.</td></tr>';
+  agendaDialog.showModal();
+}
+
+function todayAgendaItems(todayIso) {
+  return state.rows
+    .filter((row) => row.type === 'task' && row.item.status !== 'done' && taskCoversDate(row.item, todayIso))
+    .map((row) => {
+      const duration = daysBetween(parseDate(row.item.starts_on), parseDate(row.item.ends_on)) + 1;
+      return {
+        client: row.client?.name || '',
+        project: row.project?.name || '',
+        task: row.task?.name || row.item.name,
+        hours: taskHoursPerDay(row.item, duration),
+      };
+    })
+    .filter((item) => item.hours > 0)
+    .sort((a, b) => a.client.localeCompare(b.client) || a.project.localeCompare(b.project) || a.task.localeCompare(b.task));
+}
+
+function taskCoversDate(task, iso) {
+  return Boolean(task.starts_on && task.ends_on && task.starts_on <= iso && iso <= task.ends_on);
+}
+
 function renderHeader() {
   const days = daysBetween(state.range.start, state.range.end);
   const loadByDay = calculateDailyLoad();
@@ -358,7 +402,7 @@ function renderHeader() {
       const iso = toIso(date);
       const hours = loadByDay[iso] || 0;
       const level = loadLevel(hours);
-      const label = hours > 0 ? formatHours(hours) : '';
+      const label = hours > 0 ? formatHoursCompact(hours) : '';
       return `<div class="load-cell load-${level}" title="${iso}: ${formatHours(hours)} / ${dailyCapacityHours}h">${label}</div>`;
     }).join('')}</div>
     <div class="days">${Array.from({ length: days }, (_, i) => {
@@ -398,6 +442,11 @@ function loadLevel(hours) {
 function formatHours(hours) {
   if (!hours) return '0h';
   return `${Number.isInteger(hours) ? hours : hours.toFixed(1)}h`;
+}
+
+function formatHoursCompact(hours) {
+  if (!hours) return '0';
+  return `${Number.isInteger(hours) ? hours : hours.toFixed(1)}`;
 }
 
 function renderNames(rows) {
@@ -458,25 +507,25 @@ function projectLoadSummary(project) {
   const parts = [];
   if (Number(project.budget_hours || 0) > 0) {
     const budget = Number(project.budget_hours);
-    parts.push(`${formatHours(planned)} / ${formatHours(budget)}`);
+    parts.push(`${formatHoursCompact(planned)} / ${formatHoursCompact(budget)}`);
     const daysLeft = project.ends_on ? daysFromToday(project.ends_on) : 0;
     if (daysLeft > 0) {
       const remaining = Math.max(budget - doneHours, 0);
-      parts.push(`need ${formatHours(remaining / daysLeft)}/day`);
+      parts.push(`need ${formatHoursCompact(remaining / daysLeft)}/day`);
     } else if (!project.ends_on) {
       parts.push('ongoing');
     }
   } else if (planned > 0) {
-    parts.push(`${formatHours(planned)} planned`);
+    parts.push(`${formatHoursCompact(planned)} planned`);
   } else if (!project.ends_on) {
     parts.push('ongoing');
   }
   if (Number(project.daily_capacity_hours || 0) > 0) {
     const capacity = Number(project.daily_capacity_hours);
     const maxDailyLoad = maxProjectDailyLoad(activeTasks);
-    parts.push(`max ${formatHours(capacity)}/day`);
+    parts.push(`max ${formatHoursCompact(capacity)}/day`);
     if (maxDailyLoad > capacity) {
-      parts.push(`over daily ${formatHours(maxDailyLoad)}`);
+      parts.push(`over daily ${formatHoursCompact(maxDailyLoad)}`);
     }
   }
   if (Number(project.budget_hours || 0) > 0 && planned > Number(project.budget_hours)) {
@@ -508,7 +557,7 @@ function daysFromToday(endDate) {
 function taskModeSummary(task) {
   if (!task.starts_on || !task.ends_on) return '';
   const duration = daysBetween(parseDate(task.starts_on), parseDate(task.ends_on)) + 1;
-  return `${duration}d · ${formatHours(taskHoursPerDay(task, duration))}/day`;
+  return `${duration}d · ${formatHoursCompact(taskHoursPerDay(task, duration))}/day`;
 }
 
 function collapseButton(row) {
