@@ -38,7 +38,7 @@ For manual setup, see `INSTALL.md`.
 - Compact day/week Gantt timeline.
 - Drag bars to move dates.
 - Drag left/right edges to resize dates.
-- Drag projects, stages, and tasks in the left list to reorder them inside the same parent.
+- Drag clients, projects, stages, and tasks in the left list to reorder them.
 - Collapse and expand projects and stages.
 - Hover timeline bars to reveal an edit pencil.
 - Save and Add More for adding project/stage/task batches.
