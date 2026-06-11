@@ -405,14 +405,13 @@ function renderNames(rows) {
     const item = row.item;
     const status = item.status ? `<span class="status-dot status-${item.status}"></span>` : '';
     const meta = rowMeta(row);
-    const canDrag = ['project', 'stage', 'task'].includes(row.type);
+    const canDrag = ['client', 'project', 'stage', 'task'].includes(row.type);
     const draggable = canDrag ? ' draggable="true"' : '';
     const rowData = `data-row-type="${row.type}" data-id="${item.id}"`;
     const childToggle = collapseButton(row);
     return `
       <div class="name-row row-${row.type}" ${rowData}${draggable}>
         <div class="name-main">
-          ${canDrag ? `<span class="drag-grip" title="Drag to reorder" aria-hidden="true"><i class="fa-solid fa-grip-vertical"></i></span>` : ''}
           ${childToggle}
           ${status}
           <span class="name-text" title="${escapeHtml(row.text)}">${escapeHtml(row.text)}</span>
@@ -539,26 +538,11 @@ function bindListReorder(rows) {
   let dragged = null;
 
   namesRows.querySelectorAll('.name-row[draggable="true"]').forEach((rowEl) => {
-    const grip = rowEl.querySelector('.drag-grip');
-    if (!grip) return;
-
-    rowEl.draggable = false;
-    grip.draggable = true;
-
     rowEl.addEventListener('dragstart', (event) => {
-      if (!event.target.closest('.drag-grip')) {
+      if (event.target.closest('button, a, input, select, textarea')) {
         event.preventDefault();
         return;
       }
-      const row = rowElFor(rows, rowEl);
-      if (!row) return;
-      dragged = row;
-      event.dataTransfer.effectAllowed = 'move';
-      event.dataTransfer.setData('text/plain', `${row.type}:${row.item.id}`);
-      rowEl.classList.add('is-dragging');
-    });
-
-    grip.addEventListener('dragstart', (event) => {
       const row = rowElFor(rows, rowEl);
       if (!row) return;
       dragged = row;
@@ -614,6 +598,15 @@ function targetForReorder(dragged, target) {
   if (!dragged || !target) return null;
   if (dragged.type === target.type) return target;
 
+  if (dragged.type === 'client' && target.client) {
+    return {
+      type: 'client',
+      item: target.client,
+      client: target.client,
+      text: target.client.name,
+    };
+  }
+
   if (dragged.type === 'project' && target.project) {
     return {
       type: 'project',
@@ -639,6 +632,7 @@ function targetForReorder(dragged, target) {
 }
 
 function reorderScope(row) {
+  if (row.type === 'client') return 'clients';
   if (row.type === 'project') return `client:${row.client?.id}`;
   if (row.type === 'stage') return `project:${row.project?.id}`;
   if (row.type === 'task') return `stage:${row.stage?.id}`;
@@ -646,12 +640,14 @@ function reorderScope(row) {
 }
 
 function reorderPayload(type, scopeId, orderedIds) {
-  const scopeKeys = { project: 'client_id', stage: 'project_id', task: 'stage_id' };
+  const scopeKeys = { client: null, project: 'client_id', stage: 'project_id', task: 'stage_id' };
+  if (!scopeKeys[type]) return { type, item_ids: orderedIds };
   return { type, [scopeKeys[type]]: scopeId, item_ids: orderedIds };
 }
 
 async function reorderVisibleRows(dragged, target) {
   const scopeIds = {
+    client: null,
     project: Number(dragged.client?.id),
     stage: Number(dragged.project?.id),
     task: Number(dragged.stage?.id),
@@ -686,6 +682,10 @@ async function reorderVisibleRows(dragged, target) {
 
 function sortLocalCollection(type) {
   const collection = getCollection(type);
+  if (type === 'client') {
+    collection.sort((a, b) => Number(a.sort_order) - Number(b.sort_order) || Number(a.id) - Number(b.id));
+    return;
+  }
   const parentKey = type === 'project' ? 'client_id' : type === 'stage' ? 'project_id' : 'stage_id';
   collection.sort((a, b) => Number(a[parentKey]) - Number(b[parentKey]) || Number(a.sort_order) - Number(b.sort_order) || Number(a.id) - Number(b.id));
 }

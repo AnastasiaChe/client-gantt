@@ -270,18 +270,6 @@ textarea { min-height: 78px; resize: vertical; }
 .name-main { display: flex; align-items: center; gap: 7px; min-width: 0; }
 .name-text { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .meta { color: var(--muted); font-size: 11px; }
-.drag-grip {
-  width: 14px;
-  flex: 0 0 14px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #a3acba;
-  font-size: 11px;
-  cursor: grab;
-}
-.drag-grip:hover { color: var(--text-soft); }
-.drag-grip:active { cursor: grabbing; }
 .collapse-btn {
   width: 18px;
   height: 18px;

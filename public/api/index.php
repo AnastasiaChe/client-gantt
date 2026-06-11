@@ -138,7 +138,7 @@ function routeCrud(PDO $pdo, string $action, string $method): void
     $id = isset($_GET['id']) ? (int) $_GET['id'] : null;
 
     if ($action === 'clients') {
-        crud($pdo, 'clients', $id, $method, ['name', 'contact', 'notes'], ['name']);
+        crud($pdo, 'clients', $id, $method, ['name', 'contact', 'notes', 'sort_order'], ['name']);
     }
 
     if ($action === 'projects') {
@@ -332,17 +332,25 @@ function normalizeTaskPlanning(PDO $pdo, array $data, ?int $id = null): array
 function assignSortOrderOnCreate(PDO $pdo, string $table, array $data): array
 {
     $scopeMap = [
+        'clients' => null,
         'projects' => 'client_id',
         'stages' => 'project_id',
         'tasks' => 'stage_id',
     ];
     $scopeField = $scopeMap[$table] ?? null;
-    if (!$scopeField || !empty($data['sort_order']) || empty($data[$scopeField])) {
+    if (!array_key_exists($table, $scopeMap) || !empty($data['sort_order'])) {
         return $data;
     }
 
-    $stmt = $pdo->prepare("SELECT COALESCE(MAX(sort_order), 0) FROM {$table} WHERE {$scopeField} = ?");
-    $stmt->execute([$data[$scopeField]]);
+    if (!$scopeField) {
+        $stmt = $pdo->query("SELECT COALESCE(MAX(sort_order), 0) FROM {$table}");
+    } else {
+        if (empty($data[$scopeField])) {
+            return $data;
+        }
+        $stmt = $pdo->prepare("SELECT COALESCE(MAX(sort_order), 0) FROM {$table} WHERE {$scopeField} = ?");
+        $stmt->execute([$data[$scopeField]]);
+    }
     $data['sort_order'] = ((int) $stmt->fetchColumn()) + 10;
     return $data;
 }
@@ -384,7 +392,7 @@ function validateDateRange(array $data, string $table, bool $partial): void
 function timeline(PDO $pdo): void
 {
     json([
-        'clients' => $pdo->query('SELECT * FROM clients ORDER BY name')->fetchAll(),
+        'clients' => $pdo->query('SELECT * FROM clients ORDER BY sort_order, name, id')->fetchAll(),
         'projects' => $pdo->query('SELECT * FROM projects ORDER BY client_id, sort_order, starts_on IS NULL, starts_on, id')->fetchAll(),
         'stages' => $pdo->query('SELECT * FROM stages ORDER BY project_id, sort_order, starts_on, id')->fetchAll(),
         'tasks' => $pdo->query('SELECT * FROM tasks ORDER BY stage_id, sort_order, starts_on, id')->fetchAll(),
@@ -396,6 +404,7 @@ function reorderItems(PDO $pdo, ?string $forcedType = null): void
     $payload = body();
     $type = $forcedType ?: (string) ($payload['type'] ?? '');
     $config = [
+        'client' => ['table' => 'clients', 'scope' => null, 'scope_key' => null, 'ids_key' => 'client_ids'],
         'project' => ['table' => 'projects', 'scope' => 'client_id', 'scope_key' => 'client_id', 'ids_key' => 'project_ids'],
         'stage' => ['table' => 'stages', 'scope' => 'project_id', 'scope_key' => 'project_id', 'ids_key' => 'stage_ids'],
         'task' => ['table' => 'tasks', 'scope' => 'stage_id', 'scope_key' => 'stage_id', 'ids_key' => 'task_ids'],
@@ -405,10 +414,10 @@ function reorderItems(PDO $pdo, ?string $forcedType = null): void
         fail('Invalid reorder type', 422);
     }
 
-    $scopeId = (int) ($payload[$config['scope_key']] ?? 0);
+    $scopeId = $config['scope_key'] ? (int) ($payload[$config['scope_key']] ?? 0) : null;
     $itemIds = $payload['item_ids'] ?? $payload[$config['ids_key']] ?? [];
 
-    if ($scopeId <= 0 || !is_array($itemIds) || count($itemIds) === 0) {
+    if (($config['scope_key'] && $scopeId <= 0) || !is_array($itemIds) || count($itemIds) === 0) {
         fail('Missing reorder scope or item_ids', 422);
     }
 
@@ -418,8 +427,13 @@ function reorderItems(PDO $pdo, ?string $forcedType = null): void
     }
 
     $placeholders = implode(',', array_fill(0, count($itemIds), '?'));
-    $stmt = $pdo->prepare("SELECT id FROM {$config['table']} WHERE {$config['scope']} = ? AND id IN ({$placeholders})");
-    $stmt->execute(array_merge([$scopeId], $itemIds));
+    if ($config['scope']) {
+        $stmt = $pdo->prepare("SELECT id FROM {$config['table']} WHERE {$config['scope']} = ? AND id IN ({$placeholders})");
+        $stmt->execute(array_merge([$scopeId], $itemIds));
+    } else {
+        $stmt = $pdo->prepare("SELECT id FROM {$config['table']} WHERE id IN ({$placeholders})");
+        $stmt->execute($itemIds);
+    }
     $found = array_map('intval', array_column($stmt->fetchAll(), 'id'));
     sort($found);
     $expected = $itemIds;
@@ -431,9 +445,11 @@ function reorderItems(PDO $pdo, ?string $forcedType = null): void
 
     $pdo->beginTransaction();
     try {
-        $update = $pdo->prepare("UPDATE {$config['table']} SET sort_order = ? WHERE id = ? AND {$config['scope']} = ?");
+        $where = $config['scope'] ? "id = ? AND {$config['scope']} = ?" : 'id = ?';
+        $update = $pdo->prepare("UPDATE {$config['table']} SET sort_order = ? WHERE {$where}");
         foreach ($itemIds as $index => $itemId) {
-            $update->execute([($index + 1) * 10, $itemId, $scopeId]);
+            $params = $config['scope'] ? [($index + 1) * 10, $itemId, $scopeId] : [($index + 1) * 10, $itemId];
+            $update->execute($params);
         }
         $pdo->commit();
     } catch (Throwable $e) {
