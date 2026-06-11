@@ -1,0 +1,15 @@
+.DS_Store
+*.zip
+
+# Local install secrets
+app/config.php
+app/.htpasswd
+app/installed.lock
+_LOCAL_ONLY_DO_NOT_UPLOAD/
+*.local.txt
+path.php
+
+# Editor/system noise
+.idea/
+.vscode/
+Thumbs.db

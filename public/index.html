@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive,nosnippet">
+  <title>Client Gantt</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="styles.css?v=20260611-1621">
+</head>
+<body>
+  <main id="login" class="login is-hidden">
+    <form class="login-card" id="loginForm">
+      <div>
+        <p class="eyebrow">Private planner</p>
+        <h1>Client Gantt</h1>
+      </div>
+      <label>
+        Login
+        <input name="username" autocomplete="username" required>
+      </label>
+      <label>
+        Password
+        <input name="password" type="password" autocomplete="current-password" required>
+      </label>
+      <button type="submit">Enter</button>
+      <p class="form-error" id="loginError"></p>
+    </form>
+  </main>
+
+  <main id="app" class="app is-hidden">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Client planning</p>
+        <h1>Projects timeline</h1>
+      </div>
+      <div class="top-actions">
+        <button id="addClientBtn" class="level-btn level-client">+ Client</button>
+        <button id="addProjectBtn" class="level-btn level-project">+ Project</button>
+        <button id="addStageBtn" class="level-btn level-stage">+ Stage</button>
+        <button id="addTaskBtn" class="level-btn level-task">+ Task</button>
+        <details class="tools-menu">
+          <summary class="icon-button tools-trigger" aria-label="Technical menu" title="Technical menu">
+            <i class="fa-solid fa-gear" aria-hidden="true"></i>
+          </summary>
+          <div class="tools-panel">
+            <p class="tools-title">Technical</p>
+            <a class="tools-item" href="api/index.php?action=export&format=csv">
+              <i class="fa-solid fa-file-csv" aria-hidden="true"></i>
+              Backup CSV
+            </a>
+            <a class="tools-item" href="api/index.php?action=export&format=json">
+              <i class="fa-solid fa-code" aria-hidden="true"></i>
+              Backup JSON
+            </a>
+            <button id="debugBtn" class="tools-item" type="button">
+              <i class="fa-solid fa-bug" aria-hidden="true"></i>
+              Debug
+            </button>
+            <button id="copyDebugBtn" class="tools-item" type="button">
+              <i class="fa-solid fa-copy" aria-hidden="true"></i>
+              Copy debug
+            </button>
+          </div>
+        </details>
+        <button class="secondary" id="logoutBtn">Logout</button>
+      </div>
+    </header>
+
+    <section class="filters">
+      <input id="searchInput" placeholder="Search client, project, stage, task">
+      <select id="clientFilter"><option value="">All clients</option></select>
+      <select id="statusFilter">
+        <option value="">All statuses</option>
+        <option value="planned">Planned</option>
+        <option value="in_progress">In progress</option>
+        <option value="waiting">Waiting</option>
+        <option value="done">Done</option>
+        <option value="paused">Paused</option>
+      </select>
+      <button id="todayBtn" class="secondary">Today</button>
+      <button id="resetFiltersBtn" class="secondary">Reset</button>
+      <span id="rowCount" class="save-status"></span>
+      <span id="saveStatus" class="save-status"></span>
+    </section>
+
+    <section id="appError" class="app-error is-hidden"></section>
+    <pre id="debugOutput" class="debug-output is-hidden"></pre>
+
+    <section class="gantt-shell">
+      <div class="names-pane">
+        <div class="names-head">Client / project / stage / task<br><span>Task load, max 18h/day</span></div>
+        <div id="namesRows"></div>
+      </div>
+      <div class="timeline-pane" id="timelinePane">
+        <div id="timelineHeader" class="timeline-header"></div>
+        <div id="timelineRows" class="timeline-rows"></div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="editorDialog">
+    <form method="dialog" id="editorForm" class="editor-form">
+      <header>
+        <h2 id="editorTitle">Edit</h2>
+        <button type="button" class="icon-button" id="closeEditorBtn" aria-label="Close">×</button>
+      </header>
+      <div id="editorFields" class="editor-fields"></div>
+      <footer>
+        <button type="button" class="danger secondary" id="deleteBtn">Delete</button>
+        <span class="dialog-spacer"></span>
+        <button type="button" class="secondary" id="cancelBtn">Cancel</button>
+        <button type="submit">Save</button>
+      </footer>
+      <p class="form-error" id="editorError"></p>
+    </form>
+  </dialog>
+
+  <script src="app.js?v=20260611-1621"></script>
+</body>
+</html>

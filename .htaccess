@@ -1,0 +1,18 @@
+Options -Indexes
+DirectoryIndex index.php public/index.html
+
+<IfModule mod_headers.c>
+  Header set X-Robots-Tag "noindex, nofollow, noarchive, nosnippet"
+  Header set X-Content-Type-Options "nosniff"
+  Header set Referrer-Policy "same-origin"
+</IfModule>
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^(app|database|tools)(/|$) - [F,L]
+  RewriteRule ^$ index.php [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{DOCUMENT_ROOT}/public/%{REQUEST_URI} -f
+  RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>

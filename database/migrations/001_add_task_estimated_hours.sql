@@ -1,0 +1,2 @@
+ALTER TABLE tasks
+ADD COLUMN estimated_hours DECIMAL(6,2) NOT NULL DEFAULT 0 AFTER ends_on;
