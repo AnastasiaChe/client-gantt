@@ -837,7 +837,7 @@ function bindTaskProjectFilter(type) {
 
   const syncStages = () => {
     const currentStageId = stageInput.value;
-    const stages = stageOptions(projectInput.value);
+    const stages = stageOptions(projectInput.value, true);
     stageInput.innerHTML = stages.map((stage) => {
       const selected = String(stage.id) === String(currentStageId);
       return `<option value="${escapeAttr(stage.id)}" ${selected ? 'selected' : ''}>${escapeHtml(stage.label)}</option>`;
@@ -930,7 +930,7 @@ function fieldsFor(type, item) {
   const selectedProjectId = item.task_project_id || selectedStage?.project_id || state.projects[0]?.id || '';
   return [
     { name: 'task_project_id', label: 'Project', type: 'select', required: true, options: projectOptions(), value: selectedProjectId },
-    { name: 'stage_id', label: 'Stage', type: 'select', required: true, options: stageOptions(selectedProjectId), value: item.stage_id },
+    { name: 'stage_id', label: 'Stage', type: 'select', required: true, options: stageOptions(selectedProjectId, true), value: item.stage_id },
     { name: 'name', label: 'Name', required: true, value: item.name },
     commonStatus,
     { name: 'planning_mode', label: 'Planning mode', type: 'radio', options: planningModes, value: item.planning_mode || 'total', wide: true },
@@ -1112,12 +1112,12 @@ function projectOptions() {
   });
 }
 
-function stageOptions(projectId = null) {
+function stageOptions(projectId = null, compact = false) {
   return state.stages
     .filter((stage) => !projectId || String(stage.project_id) === String(projectId))
     .map((stage) => {
     const project = state.projects.find((entry) => Number(entry.id) === Number(stage.project_id));
-    return { id: stage.id, project_id: stage.project_id, label: `${project?.name || 'Project'} / ${stage.name}` };
+    return { id: stage.id, project_id: stage.project_id, label: compact ? stage.name : `${project?.name || 'Project'} / ${stage.name}` };
   });
 }
 
