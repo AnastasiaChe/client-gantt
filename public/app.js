@@ -19,6 +19,10 @@ const state = {
   rows: [],
   range: null,
   filters: { search: '', client: '', status: '' },
+  collapsed: {
+    projects: new Set(),
+    stages: new Set(),
+  },
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -181,6 +185,11 @@ function filteredRows() {
   return state.rows.filter((row) => {
     if (clientId && String(row.client?.id) !== clientId) return false;
     if (status && row.item.status && row.item.status !== status) return false;
+    if (row.type === 'stage' && state.collapsed.projects.has(Number(row.project?.id))) return false;
+    if (row.type === 'task' && (
+      state.collapsed.projects.has(Number(row.project?.id))
+      || state.collapsed.stages.has(Number(row.stage?.id))
+    )) return false;
     if (search) {
       const haystack = [row.client?.name, row.project?.name, row.stage?.name, row.task?.name, row.item.contact, row.item.notes, row.item.description]
         .filter(Boolean)
@@ -332,9 +341,13 @@ function renderNames(rows) {
     const item = row.item;
     const status = item.status ? `<span class="status-dot status-${item.status}"></span>` : '';
     const meta = row.type === 'client' ? item.contact || '' : statusLabels[item.status] || '';
+    const draggable = row.type === 'task' ? ' draggable="true"' : '';
+    const rowData = `data-row-type="${row.type}" data-id="${item.id}"`;
+    const childToggle = collapseButton(row);
     return `
-      <div class="name-row row-${row.type}">
+      <div class="name-row row-${row.type}" ${rowData}${draggable}>
         <div class="name-main">
+          ${childToggle}
           ${status}
           <span class="name-text" title="${escapeHtml(row.text)}">${escapeHtml(row.text)}</span>
           ${meta ? `<span class="meta">${escapeHtml(meta)}</span>` : ''}
@@ -351,6 +364,111 @@ function renderNames(rows) {
   namesRows.querySelectorAll('[data-edit]').forEach((button) => {
     button.addEventListener('click', () => openEditor(button.dataset.edit, Number(button.dataset.id)));
   });
+  namesRows.querySelectorAll('[data-collapse]').forEach((button) => {
+    button.addEventListener('click', () => toggleCollapse(button.dataset.collapse, Number(button.dataset.id)));
+  });
+  bindTaskListReorder(rows);
+}
+
+function collapseButton(row) {
+  if (row.type !== 'project' && row.type !== 'stage') return '';
+  const setName = row.type === 'project' ? 'projects' : 'stages';
+  const isCollapsed = state.collapsed[setName].has(Number(row.item.id));
+  const icon = isCollapsed ? 'fa-chevron-right' : 'fa-chevron-down';
+  return `
+    <button class="collapse-btn" type="button" data-collapse="${setName}" data-id="${row.item.id}" aria-label="${isCollapsed ? 'Expand' : 'Collapse'} ${escapeAttr(row.text)}" title="${isCollapsed ? 'Expand' : 'Collapse'}">
+      <i class="fa-solid ${icon}" aria-hidden="true"></i>
+    </button>
+  `;
+}
+
+function toggleCollapse(setName, id) {
+  const set = state.collapsed[setName];
+  if (!set) return;
+  if (set.has(id)) {
+    set.delete(id);
+  } else {
+    set.add(id);
+  }
+  render();
+}
+
+function bindTaskListReorder(rows) {
+  let dragged = null;
+
+  namesRows.querySelectorAll('.row-task[draggable="true"]').forEach((rowEl) => {
+    rowEl.addEventListener('dragstart', (event) => {
+      const row = rows.find((entry) => entry.type === 'task' && Number(entry.item.id) === Number(rowEl.dataset.id));
+      if (!row) return;
+      dragged = row;
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', String(row.item.id));
+      rowEl.classList.add('is-dragging');
+    });
+
+    rowEl.addEventListener('dragend', () => {
+      rowEl.classList.remove('is-dragging');
+      namesRows.querySelectorAll('.is-drop-target').forEach((entry) => entry.classList.remove('is-drop-target'));
+      dragged = null;
+    });
+
+    rowEl.addEventListener('dragover', (event) => {
+      if (!dragged || Number(dragged.stage?.id) !== Number(rowElFor(rows, rowEl)?.stage?.id)) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+      rowEl.classList.add('is-drop-target');
+    });
+
+    rowEl.addEventListener('dragleave', () => {
+      rowEl.classList.remove('is-drop-target');
+    });
+
+    rowEl.addEventListener('drop', async (event) => {
+      event.preventDefault();
+      rowEl.classList.remove('is-drop-target');
+      const target = rowElFor(rows, rowEl);
+      if (!dragged || !target || Number(dragged.item.id) === Number(target.item.id)) return;
+      if (Number(dragged.stage?.id) !== Number(target.stage?.id)) {
+        setSaving('Tasks can be reordered only inside one stage');
+        setTimeout(() => setSaving(''), 1600);
+        return;
+      }
+      await reorderVisibleTasks(dragged, target, rows);
+    });
+  });
+}
+
+function rowElFor(rows, rowEl) {
+  return rows.find((entry) => entry.type === 'task' && Number(entry.item.id) === Number(rowEl.dataset.id));
+}
+
+async function reorderVisibleTasks(dragged, target, rows) {
+  const stageId = Number(dragged.stage.id);
+  const taskRows = rows.filter((entry) => entry.type === 'task' && Number(entry.stage?.id) === stageId);
+  const orderedIds = taskRows.map((entry) => Number(entry.item.id));
+  const from = orderedIds.indexOf(Number(dragged.item.id));
+  const to = orderedIds.indexOf(Number(target.item.id));
+  if (from < 0 || to < 0 || from === to) return;
+
+  orderedIds.splice(from, 1);
+  orderedIds.splice(to, 0, Number(dragged.item.id));
+
+  try {
+    setSaving('Saving order...');
+    await api('reorder_tasks', { method: 'POST', body: { stage_id: stageId, task_ids: orderedIds } });
+    orderedIds.forEach((id, index) => {
+      const task = state.tasks.find((entry) => Number(entry.id) === id);
+      if (task) task.sort_order = (index + 1) * 10;
+    });
+    state.tasks.sort((a, b) => Number(a.stage_id) - Number(b.stage_id) || Number(a.sort_order) - Number(b.sort_order) || Number(a.id) - Number(b.id));
+    buildRows();
+    render();
+    setSaving('Order saved');
+    setTimeout(() => setSaving(''), 1400);
+  } catch (error) {
+    setSaving(error.message);
+    await loadTimeline();
+  }
 }
 
 function renderTimeline(rows) {
@@ -377,6 +495,9 @@ function renderTimeline(rows) {
           <span class="handle left" data-mode="resize-left"></span>
           ${doneMark}
           <span class="bar-label">${escapeHtml(row.text)}</span>
+          <button class="bar-edit" type="button" data-bar-edit="${row.type}" data-id="${item.id}" aria-label="Edit ${escapeAttr(row.text)}" title="Edit">
+            <i class="fa-solid fa-pencil" aria-hidden="true"></i>
+          </button>
           <span class="handle right" data-mode="resize-right"></span>
         </div>
       `;
@@ -389,10 +510,17 @@ function renderTimeline(rows) {
   timelineRows.querySelectorAll('.bar[data-url]').forEach((bar) => {
     bar.addEventListener('dblclick', () => window.open(bar.dataset.url, '_blank', 'noopener'));
   });
+  timelineRows.querySelectorAll('[data-bar-edit]').forEach((button) => {
+    button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      openEditor(button.dataset.barEdit, Number(button.dataset.id));
+    });
+  });
 }
 
 function bindDrag(bar) {
   bar.addEventListener('pointerdown', (event) => {
+    if (event.target.closest('[data-bar-edit]')) return;
     const handle = event.target.closest('.handle');
     const mode = handle?.dataset.mode || 'move';
     const type = bar.dataset.type;

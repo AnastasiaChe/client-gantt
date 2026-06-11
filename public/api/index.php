@@ -59,6 +59,10 @@ try {
         exportData($pdo, $_GET['format'] ?? 'json');
     }
 
+    if ($action === 'reorder_tasks' && $method === 'POST') {
+        reorderTasks($pdo);
+    }
+
     routeCrud($pdo, $action, $method);
 } catch (Throwable $e) {
     $status = (int) ($e->getCode() ?: 500);
@@ -304,6 +308,48 @@ function timeline(PDO $pdo): void
         'stages' => $pdo->query('SELECT * FROM stages ORDER BY project_id, sort_order, starts_on, id')->fetchAll(),
         'tasks' => $pdo->query('SELECT * FROM tasks ORDER BY stage_id, sort_order, starts_on, id')->fetchAll(),
     ]);
+}
+
+function reorderTasks(PDO $pdo): void
+{
+    $payload = body();
+    $stageId = (int) ($payload['stage_id'] ?? 0);
+    $taskIds = $payload['task_ids'] ?? [];
+
+    if ($stageId <= 0 || !is_array($taskIds) || count($taskIds) === 0) {
+        fail('Missing stage_id or task_ids', 422);
+    }
+
+    $taskIds = array_values(array_unique(array_map('intval', $taskIds)));
+    if (in_array(0, $taskIds, true)) {
+        fail('Invalid task id', 422);
+    }
+
+    $placeholders = implode(',', array_fill(0, count($taskIds), '?'));
+    $stmt = $pdo->prepare("SELECT id FROM tasks WHERE stage_id = ? AND id IN ({$placeholders})");
+    $stmt->execute(array_merge([$stageId], $taskIds));
+    $found = array_map('intval', array_column($stmt->fetchAll(), 'id'));
+    sort($found);
+    $expected = $taskIds;
+    sort($expected);
+
+    if ($found !== $expected) {
+        fail('Tasks must belong to the same stage', 422);
+    }
+
+    $pdo->beginTransaction();
+    try {
+        $update = $pdo->prepare('UPDATE tasks SET sort_order = ? WHERE id = ? AND stage_id = ?');
+        foreach ($taskIds as $index => $taskId) {
+            $update->execute([($index + 1) * 10, $taskId, $stageId]);
+        }
+        $pdo->commit();
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
+
+    json(['ok' => true]);
 }
 
 function diagnostics(PDO $pdo): void

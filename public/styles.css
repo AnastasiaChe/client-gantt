@@ -72,7 +72,7 @@ input, select, textarea {
 textarea { min-height: 78px; resize: vertical; }
 .form-error { min-height: 16px; margin: 0; color: var(--danger); }
 
-.app { min-height: 100vh; padding: 14px; display: grid; grid-template-rows: auto auto 1fr; gap: 10px; }
+.app { min-height: 100vh; padding: 14px; display: grid; grid-template-rows: auto auto auto 1fr; gap: 10px; }
 .topbar, .filters {
   display: flex;
   align-items: center;
@@ -180,8 +180,6 @@ textarea { min-height: 78px; resize: vertical; }
 }
 
 .gantt-shell {
-  min-height: 620px;
-  height: calc(100vh - 122px);
   display: grid;
   grid-template-columns: var(--left) minmax(0, 1fr);
   background: var(--panel);
@@ -189,12 +187,12 @@ textarea { min-height: 78px; resize: vertical; }
   border-radius: 8px;
   overflow: hidden;
 }
-.names-pane { border-right: 1px solid var(--line); overflow: hidden; }
+.names-pane { border-right: 1px solid var(--line); overflow: visible; }
 .names-head, .timeline-header { height: 82px; background: #f2f4f8; border-bottom: 1px solid var(--line); }
 .names-head { display: flex; align-items: end; padding: 0 10px 9px; font-weight: 750; color: var(--text-soft); line-height: 1.25; }
 .names-head span { color: var(--muted); font-size: 11px; font-weight: 650; }
 #namesRows, .timeline-rows { position: relative; }
-.timeline-pane { overflow: auto; }
+.timeline-pane { overflow-x: auto; overflow-y: visible; }
 .timeline-header { position: sticky; top: 0; z-index: 5; min-width: max-content; }
 .months, .days, .load-strip { display: flex; }
 .month { height: 24px; padding: 5px 7px 0; border-right: 1px solid var(--line); font-weight: 750; color: var(--text-soft); white-space: nowrap; }
@@ -232,6 +230,20 @@ textarea { min-height: 78px; resize: vertical; }
 .name-main { display: flex; align-items: center; gap: 7px; min-width: 0; }
 .name-text { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .meta { color: var(--muted); font-size: 11px; }
+.collapse-btn {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 10px;
+}
+.collapse-btn:hover { color: var(--text); filter: none; }
 .row-client {
   background: linear-gradient(90deg, var(--client-bg), #fff 72%);
   border-left: 4px solid var(--client);
@@ -253,6 +265,15 @@ textarea { min-height: 78px; resize: vertical; }
   background: linear-gradient(90deg, var(--task-bg), #fff 66%);
   border-left: 4px solid var(--task);
   color: var(--text-soft);
+}
+.row-task[draggable="true"] { cursor: grab; }
+.row-task.is-dragging {
+  opacity: .48;
+  cursor: grabbing;
+}
+.row-task.is-drop-target {
+  box-shadow: inset 0 2px 0 var(--brand);
+  background: #eaf1ff;
 }
 .row-actions { display: flex; gap: 4px; opacity: 0; pointer-events: none; transition: opacity .12s ease; }
 .name-row:hover .row-actions,
@@ -305,7 +326,7 @@ textarea { min-height: 78px; resize: vertical; }
   color: #fff;
   display: flex;
   align-items: center;
-  padding: 0 7px;
+  padding: 0 24px 0 7px;
   font-size: 11px;
   font-weight: 750;
   overflow: hidden;
@@ -314,6 +335,36 @@ textarea { min-height: 78px; resize: vertical; }
   box-shadow: inset 0 -1px 0 rgba(0,0,0,.14);
   cursor: grab;
 }
+.bar-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bar-edit {
+  position: absolute;
+  right: 7px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 17px;
+  height: 17px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, .92);
+  color: #1f2937;
+  font-size: 10px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .12s ease;
+}
+.bar:hover .bar-edit,
+.bar:focus-within .bar-edit {
+  opacity: 1;
+  pointer-events: auto;
+}
+.bar-edit:hover { filter: none; background: #fff; }
 .bar-level-project { background: var(--project) !important; }
 .bar-level-stage { background: var(--stage) !important; }
 .bar-level-task { background: var(--task) !important; }
@@ -376,6 +427,6 @@ dialog::backdrop { background: rgba(24, 32, 47, .28); }
 @media (max-width: 900px) {
   .app { padding: 10px; }
   .topbar { align-items: flex-start; flex-direction: column; }
-  .gantt-shell { grid-template-columns: 320px minmax(0, 1fr); height: calc(100vh - 184px); }
+  .gantt-shell { grid-template-columns: 320px minmax(0, 1fr); }
   .editor-fields { grid-template-columns: 1fr; }
 }
