@@ -825,7 +825,30 @@ function openEditor(type, id = null, defaults = {}) {
   editorTitle.textContent = `${id ? 'Edit' : 'Add'} ${type}`;
   editorFields.innerHTML = fieldsFor(type, item).map(fieldHtml).join('');
   editorDialog.showModal();
+  bindTaskProjectFilter(type);
   bindTaskPlanningFields(type);
+}
+
+function bindTaskProjectFilter(type) {
+  if (type !== 'task') return;
+  const projectInput = editorForm.elements.task_project_id;
+  const stageInput = editorForm.elements.stage_id;
+  if (!projectInput || !stageInput) return;
+
+  const syncStages = () => {
+    const currentStageId = stageInput.value;
+    const stages = stageOptions(projectInput.value);
+    stageInput.innerHTML = stages.map((stage) => {
+      const selected = String(stage.id) === String(currentStageId);
+      return `<option value="${escapeAttr(stage.id)}" ${selected ? 'selected' : ''}>${escapeHtml(stage.label)}</option>`;
+    }).join('');
+    if (![...stageInput.options].some((option) => option.selected)) {
+      stageInput.selectedIndex = 0;
+    }
+  };
+
+  projectInput.addEventListener('change', syncStages);
+  syncStages();
 }
 
 function bindTaskPlanningFields(type) {
@@ -903,8 +926,11 @@ function fieldsFor(type, item) {
       { name: 'description', label: 'Description', type: 'textarea', wide: true, value: item.description },
     ];
   }
+  const selectedStage = state.stages.find((stage) => Number(stage.id) === Number(item.stage_id));
+  const selectedProjectId = item.task_project_id || selectedStage?.project_id || state.projects[0]?.id || '';
   return [
-    { name: 'stage_id', label: 'Stage', type: 'select', required: true, options: stageOptions(), value: item.stage_id },
+    { name: 'task_project_id', label: 'Project', type: 'select', required: true, options: projectOptions(), value: selectedProjectId },
+    { name: 'stage_id', label: 'Stage', type: 'select', required: true, options: stageOptions(selectedProjectId), value: item.stage_id },
     { name: 'name', label: 'Name', required: true, value: item.name },
     commonStatus,
     { name: 'planning_mode', label: 'Planning mode', type: 'radio', options: planningModes, value: item.planning_mode || 'total', wide: true },
@@ -929,7 +955,8 @@ function fieldHtml(field) {
     const options = field.options.map((option) => {
       const val = typeof option === 'string' ? option : option.id;
       const label = typeof option === 'string' ? statusLabels[option] : option.label || option.name;
-      return `<option value="${escapeAttr(val)}" ${String(val) === String(field.value) ? 'selected' : ''}>${escapeHtml(label)}</option>`;
+      const projectAttr = option.project_id ? ` data-project-id="${escapeAttr(option.project_id)}"` : '';
+      return `<option value="${escapeAttr(val)}"${projectAttr} ${String(val) === String(field.value) ? 'selected' : ''}>${escapeHtml(label)}</option>`;
     }).join('');
     return `<label${wide}>${field.label}<select name="${field.name}"${required}>${options}</select></label>`;
   }
@@ -996,6 +1023,7 @@ function nextDefaults(type, previous) {
   }
   if (type === 'task') {
     return {
+      task_project_id: previous.task_project_id,
       stage_id: previous.stage_id,
       status: previous.status || 'planned',
       planning_mode: previous.planning_mode || 'total',
@@ -1084,10 +1112,12 @@ function projectOptions() {
   });
 }
 
-function stageOptions() {
-  return state.stages.map((stage) => {
+function stageOptions(projectId = null) {
+  return state.stages
+    .filter((stage) => !projectId || String(stage.project_id) === String(projectId))
+    .map((stage) => {
     const project = state.projects.find((entry) => Number(entry.id) === Number(stage.project_id));
-    return { id: stage.id, label: `${project?.name || 'Project'} / ${stage.name}` };
+    return { id: stage.id, project_id: stage.project_id, label: `${project?.name || 'Project'} / ${stage.name}` };
   });
 }
 
