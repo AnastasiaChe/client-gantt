@@ -45,6 +45,9 @@ For manual setup, see `INSTALL.md`.
 - Search and filters.
 - Gear menu for CSV/JSON backups and debug tools.
 - Task `estimated_hours`.
+- Task planning modes: fixed total hours or automatic total from hours/day.
+- Project budget hours and max hours/day.
+- Ongoing projects without a deadline.
 - Daily load strip based only on active tasks.
 - Overbooking highlight above 18h/day.
 - Done mark inside timeline bars.

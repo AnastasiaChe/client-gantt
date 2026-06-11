@@ -66,11 +66,27 @@ For existing installations, apply migrations from:
 database/migrations/
 ```
 
-Current migration:
+Current migrations:
 
 ```sql
 ALTER TABLE tasks
 ADD COLUMN estimated_hours DECIMAL(6,2) NOT NULL DEFAULT 0 AFTER ends_on;
+
+ALTER TABLE projects
+ADD COLUMN budget_hours DECIMAL(7,2) NULL AFTER ends_on,
+ADD COLUMN daily_capacity_hours DECIMAL(6,2) NULL AFTER budget_hours;
+
+ALTER TABLE tasks
+ADD COLUMN planning_mode ENUM('total', 'daily') NOT NULL DEFAULT 'total' AFTER ends_on,
+ADD COLUMN hours_per_day DECIMAL(6,2) NOT NULL DEFAULT 0 AFTER planning_mode;
+
+UPDATE tasks
+SET hours_per_day = ROUND(
+    estimated_hours / GREATEST(DATEDIFF(ends_on, starts_on) + 1, 1),
+    2
+)
+WHERE starts_on IS NOT NULL
+  AND ends_on IS NOT NULL;
 ```
 
 ## Config
@@ -160,12 +176,29 @@ Each task has:
 
 ```text
 estimated_hours
+planning_mode
+hours_per_day
 starts_on
 ends_on
 status
 ```
 
-The app divides estimated hours evenly across the task date range. Done tasks are ignored.
+Task planning modes:
+
+- `total`: enter total hours; the app calculates hours/day from task duration.
+- `daily`: enter hours/day; the app calculates total hours from task duration.
+
+Done tasks are ignored in daily workload.
+
+Projects can have:
+
+```text
+budget_hours
+daily_capacity_hours
+ends_on
+```
+
+If a project has no `ends_on`, it is treated as ongoing. Budget and max hours/day still work, but the app does not show a deadline-based `need Xh/day` target. Because support retainers are not magic; they just refuse to end.
 
 Daily load colors:
 
