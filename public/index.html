@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow,noarchive,nosnippet">
   <title>Client Gantt</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-  <link rel="stylesheet" href="styles.css?v=20260611-1745">
+  <link rel="stylesheet" href="styles.css?v=20260611-1805">
 </head>
 <body>
   <main id="login" class="login is-hidden">
@@ -92,6 +92,7 @@
         <div class="names-head">Client / project / stage / task<br><span>Task load, max 18h/day</span></div>
         <div id="namesRows"></div>
       </div>
+      <button id="columnResizeHandle" class="column-resize-handle" type="button" aria-label="Resize project column" title="Drag to resize. Double-click to reset."></button>
       <div class="timeline-pane" id="timelinePane">
         <div id="timelineHeader" class="timeline-header"></div>
         <div id="timelineRows" class="timeline-rows"></div>
@@ -116,6 +117,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=20260611-1745"></script>
+  <script src="app.js?v=20260611-1805"></script>
 </body>
 </html>

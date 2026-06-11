@@ -2,6 +2,9 @@ const apiBase = 'api/index.php';
 const dayMs = 24 * 60 * 60 * 1000;
 const pxPerDay = 28;
 const dailyCapacityHours = 18;
+const leftColumnStorageKey = 'clientGantt.leftColumnWidth';
+const defaultLeftColumnWidth = 430;
+const minLeftColumnWidth = 260;
 const statuses = ['planned', 'in_progress', 'waiting', 'done', 'paused'];
 const statusLabels = {
   planned: 'Planned',
@@ -32,6 +35,7 @@ const namesRows = $('#namesRows');
 const timelineRows = $('#timelineRows');
 const timelineHeader = $('#timelineHeader');
 const timelinePane = $('#timelinePane');
+const columnResizeHandle = $('#columnResizeHandle');
 const saveStatus = $('#saveStatus');
 const appError = $('#appError');
 const debugOutput = $('#debugOutput');
@@ -48,6 +52,7 @@ document.addEventListener('DOMContentLoaded', boot);
 
 async function boot() {
   bindGlobalEvents();
+  initColumnResize();
   try {
     const me = await api('me');
     if (me.authenticated) {
@@ -108,6 +113,57 @@ function bindGlobalEvents() {
   $('#cancelBtn').addEventListener('click', () => editorDialog.close());
   deleteBtn.addEventListener('click', deleteCurrent);
   editorForm.addEventListener('submit', saveCurrent);
+}
+
+function initColumnResize() {
+  const shell = $('.gantt-shell');
+  if (!shell || !columnResizeHandle) return;
+
+  const savedWidth = Number(localStorage.getItem(leftColumnStorageKey));
+  if (savedWidth) {
+    setLeftColumnWidth(savedWidth);
+  }
+
+  columnResizeHandle.addEventListener('dblclick', () => {
+    localStorage.removeItem(leftColumnStorageKey);
+    setLeftColumnWidth(defaultLeftColumnWidth);
+  });
+
+  columnResizeHandle.addEventListener('pointerdown', (event) => {
+    event.preventDefault();
+    columnResizeHandle.setPointerCapture(event.pointerId);
+    shell.classList.add('is-resizing');
+
+    const move = (moveEvent) => {
+      const shellRect = shell.getBoundingClientRect();
+      const nextWidth = moveEvent.clientX - shellRect.left;
+      setLeftColumnWidth(nextWidth);
+    };
+
+    const up = (upEvent) => {
+      columnResizeHandle.releasePointerCapture(upEvent.pointerId);
+      shell.classList.remove('is-resizing');
+      localStorage.setItem(leftColumnStorageKey, getLeftColumnWidth().toString());
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    };
+
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  });
+}
+
+function setLeftColumnWidth(width) {
+  const shell = $('.gantt-shell');
+  if (!shell) return;
+  const maxWidth = Math.max(minLeftColumnWidth, Math.min(window.innerWidth - 360, 720));
+  const nextWidth = Math.min(Math.max(Math.round(width), minLeftColumnWidth), maxWidth);
+  document.documentElement.style.setProperty('--left', `${nextWidth}px`);
+}
+
+function getLeftColumnWidth() {
+  const value = getComputedStyle(document.documentElement).getPropertyValue('--left');
+  return Number.parseInt(value, 10) || defaultLeftColumnWidth;
 }
 
 function showApp() {
