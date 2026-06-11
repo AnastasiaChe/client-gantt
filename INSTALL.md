@@ -87,6 +87,13 @@ SET hours_per_day = ROUND(
 )
 WHERE starts_on IS NOT NULL
   AND ends_on IS NOT NULL;
+
+ALTER TABLE projects
+ADD COLUMN sort_order INT NOT NULL DEFAULT 0 AFTER notes;
+
+UPDATE projects
+SET sort_order = id * 10
+WHERE sort_order = 0;
 ```
 
 ## Config
@@ -212,8 +219,11 @@ Daily load colors:
 - Drag timeline bars to move dates.
 - Drag bar edges to resize the date range.
 - Hover a timeline bar to show the edit pencil.
-- Drag task rows in the left list to reorder tasks inside the same stage.
+- Drag project rows to reorder projects inside the same client.
+- Drag stage rows to reorder stages inside the same project.
+- Drag task rows to reorder tasks inside the same stage.
 - Use chevrons on projects and stages to collapse or expand nested rows.
+- Use `Save and Add More` when creating projects, stages, or tasks to keep adding items inside the same parent.
 
 ## Backups
 
