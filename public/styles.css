@@ -214,7 +214,18 @@ textarea { min-height: 78px; resize: vertical; }
   outline: none;
 }
 .names-head, .timeline-header { height: 82px; background: #f2f4f8; border-bottom: 1px solid var(--line); }
-.names-head { display: flex; align-items: end; padding: 0 10px 9px; font-weight: 750; color: var(--text-soft); line-height: 1.25; }
+.names-head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: end;
+  gap: 2px;
+  padding: 0 10px 9px;
+  font-weight: 750;
+  color: var(--text-soft);
+  line-height: 1.25;
+}
+.names-head strong { font-size: 13px; color: var(--text); }
 .names-head span { color: var(--muted); font-size: 11px; font-weight: 650; }
 #namesRows, .timeline-rows { position: relative; }
 .timeline-pane { overflow-x: auto; overflow-y: visible; }
