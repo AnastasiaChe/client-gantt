@@ -510,10 +510,19 @@ textarea { min-height: 78px; resize: vertical; }
 
 dialog {
   width: min(740px, calc(100vw - 28px));
+  max-width: calc(100vw - 28px);
+  max-height: none;
   border: 1px solid var(--line);
   border-radius: var(--modal-radius);
   padding: 0;
+  overflow: visible;
   box-shadow: var(--modal-shadow);
+}
+dialog[open] {
+  position: absolute;
+  top: 40px;
+  bottom: auto;
+  margin: 0 auto 40px;
 }
 dialog::backdrop { background: var(--overlay); }
 .editor-dialog.editor-task { width: min(740px, calc(100vw - 28px)); }
@@ -545,8 +554,7 @@ dialog::backdrop { background: var(--overlay); }
   white-space: nowrap;
 }
 .agenda-table-wrap {
-  max-height: min(520px, 70vh);
-  overflow: auto;
+  overflow: visible;
   border: 1px solid var(--line);
   border-radius: 0 0 var(--modal-radius) var(--modal-radius);
   margin: 8px -26px 0;
@@ -554,6 +562,7 @@ dialog::backdrop { background: var(--overlay); }
 }
 .agenda-table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 12px;
 }
@@ -592,6 +601,7 @@ dialog::backdrop { background: var(--overlay); }
 .editor-form header { justify-content: space-between; }
 .editor-form footer {
   justify-content: space-between;
+  flex-wrap: wrap;
 }
 .editor-form footer button {
   padding: 12px 30px;
@@ -620,6 +630,7 @@ dialog::backdrop { background: var(--overlay); }
 .editor-field.field-third { grid-column: span 2; }
 .editor-field {
   display: grid;
+  min-width: 0;
   gap: 2px;
   color: var(--text);
   font-size: 11px;
@@ -632,6 +643,7 @@ dialog::backdrop { background: var(--overlay); }
   font-size: 12px;
   font-weight: 400;
   letter-spacing: -.12px;
+  min-width: 0;
 }
 .editor-field textarea {
   min-height: 133px;
@@ -639,6 +651,7 @@ dialog::backdrop { background: var(--overlay); }
   font-size: 12px;
   font-weight: 400;
   letter-spacing: -.12px;
+  min-width: 0;
 }
 .radio-tabs {
   display: inline-grid;
@@ -684,4 +697,6 @@ dialog::backdrop { background: var(--overlay); }
   .topbar { align-items: flex-start; flex-direction: column; }
   .gantt-shell { --left: 320px; grid-template-columns: var(--left) 8px minmax(0, 1fr); }
   .editor-fields { grid-template-columns: 1fr; }
+  .editor-field.field-half,
+  .editor-field.field-third { grid-column: 1 / -1; }
 }
