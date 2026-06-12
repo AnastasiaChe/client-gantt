@@ -398,8 +398,16 @@ textarea { min-height: 78px; resize: vertical; }
   background: transparent;
   color: var(--muted);
   font-size: 10px;
+  box-shadow: none;
 }
-.collapse-btn:hover { color: var(--text); filter: none; }
+.collapse-btn:hover,
+.collapse-btn:focus-visible {
+  background: transparent;
+  color: var(--text);
+  box-shadow: none;
+  filter: none;
+  outline: none;
+}
 .row-client {
   padding-left: 15px;
   background: linear-gradient(to right, var(--client-bg), rgba(255, 255, 255, 0));
@@ -503,7 +511,7 @@ textarea { min-height: 78px; resize: vertical; }
   color: #fff;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 5px;
   padding: 0 28px 0 10px;
   font-size: 12px;
@@ -538,13 +546,21 @@ textarea { min-height: 78px; resize: vertical; }
   opacity: 0;
   pointer-events: none;
   transition: opacity .12s ease;
+  box-shadow: none;
 }
 .bar:hover .bar-edit,
 .bar:focus-within .bar-edit {
   opacity: 1;
   pointer-events: auto;
 }
-.bar-edit:hover { filter: none; background: #fff; }
+.bar-edit:hover,
+.bar-edit:focus-visible {
+  background: #fff;
+  color: #1f2937;
+  box-shadow: none;
+  filter: none;
+  outline: none;
+}
 .bar-level-project { background: linear-gradient(180deg, var(--project-light) -15.62%, var(--project) 100%) !important; }
 .bar-level-stage { background: linear-gradient(to bottom, var(--stage-light), var(--stage)) !important; }
 .bar-level-task { background: linear-gradient(to bottom, var(--task-light), var(--task)) !important; }
