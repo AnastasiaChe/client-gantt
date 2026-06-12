@@ -737,12 +737,18 @@ dialog::backdrop { background: var(--overlay); }
   justify-content: flex-start;
   gap: 50px;
 }
+.agenda-panel h2 {
+  font-size: 20px;
+  line-height: normal;
+  font-weight: 900;
+}
 .agenda-summary {
   display: flex;
   align-items: center;
   gap: 50px;
   color: var(--text);
   font-size: 16px;
+  line-height: normal;
   font-weight: 900;
   white-space: nowrap;
 }
