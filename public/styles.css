@@ -107,6 +107,14 @@ button:disabled,
   box-shadow: var(--button-shadow);
 }
 .secondary { background: var(--surface); color: var(--text); border-color: var(--line); box-shadow: none; }
+.secondary i {
+  width: 13px;
+  height: 13px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 13px;
+  text-align: center;
+}
 .secondary:hover,
 .secondary:focus-visible,
 .secondary:active { background: var(--bg-disabled); border-color: var(--line); color: var(--text); box-shadow: none; }
@@ -214,6 +222,10 @@ textarea { min-height: 78px; resize: vertical; }
   gap: 10px;
   padding: 8px 20px;
   height: 32px;
+}
+.logout-btn {
+  height: 32px;
+  gap: 10px;
 }
 .level-btn {
   color: #fff;
@@ -606,6 +618,7 @@ textarea { min-height: 78px; resize: vertical; }
   flex: 0 0 16px;
   width: 16px;
   height: 16px;
+  min-height: 16px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -615,10 +628,19 @@ textarea { min-height: 78px; resize: vertical; }
   background: transparent;
   color: #fff;
   font-size: 8px;
+  line-height: 8px;
   opacity: 0;
   pointer-events: none;
   transition: opacity .12s ease;
   box-shadow: none;
+}
+.bar-edit i {
+  width: 8px;
+  height: 8px;
+  color: #fff;
+  font-size: 8px;
+  line-height: 8px;
+  text-align: center;
 }
 .bar:hover .bar-edit,
 .bar:focus-within .bar-edit {
@@ -626,10 +648,11 @@ textarea { min-height: 78px; resize: vertical; }
   pointer-events: auto;
 }
 .bar-edit:hover,
-.bar-edit:focus-visible {
-  background: var(--bg-disabled);
+.bar-edit:focus-visible,
+.bar-edit:active {
+  background: transparent;
   border-color: #fff;
-  color: var(--text);
+  color: #fff;
   box-shadow: none;
   filter: none;
   outline: none;
