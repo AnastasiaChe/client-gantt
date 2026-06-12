@@ -442,7 +442,12 @@ textarea { min-height: 78px; resize: vertical; }
 
 .name-row, .time-row {
   height: var(--row);
+}
+.name-row {
   border-bottom: 1px solid var(--line);
+}
+.time-row {
+  border-bottom: 1px solid var(--panel-border);
 }
 .name-row {
   display: grid;
