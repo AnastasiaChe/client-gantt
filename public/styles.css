@@ -381,6 +381,10 @@ textarea { min-height: 78px; resize: vertical; }
 .name-main { display: flex; align-items: center; gap: 7px; min-width: 0; }
 .name-text { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .meta { color: var(--muted); font-size: 11px; }
+.meta {
+  line-height: 14px;
+  font-weight: 400;
+}
 .collapse-btn {
   width: 18px;
   height: 18px;
@@ -396,32 +400,34 @@ textarea { min-height: 78px; resize: vertical; }
 }
 .collapse-btn:hover { color: var(--text); filter: none; }
 .row-client {
+  padding-left: 15px;
   background: linear-gradient(to right, var(--client-bg), rgba(255, 255, 255, 0));
   border-left: 5px solid var(--client);
-  font-weight: 900;
+  font-weight: 700;
   font-size: 13px;
   line-height: 16px;
 }
 .row-project {
-  padding-left: 22px;
+  padding-left: 15px;
   background: linear-gradient(to right, var(--project-bg), rgba(255, 255, 255, 0));
   border-left: 5px solid var(--project);
-  font-weight: 900;
+  font-weight: 700;
   font-size: 12px;
   line-height: 15px;
 }
 .row-stage {
-  padding-left: 42px;
+  padding-left: 37px;
   background: linear-gradient(to right, var(--stage-bg), rgba(255, 255, 255, 0));
   border-left: 5px solid var(--stage);
+  font-weight: 700;
   font-size: 12px;
   line-height: 15px;
 }
 .row-task {
-  padding-left: 62px;
+  padding-left: 65px;
   background: linear-gradient(to right, var(--task-bg), rgba(255, 255, 255, 0));
   border-left: 5px solid var(--task);
-  color: var(--text-soft);
+  color: var(--text);
   font-size: 12px;
   line-height: 15px;
   font-weight: 400;
