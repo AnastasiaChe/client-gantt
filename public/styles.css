@@ -747,7 +747,9 @@ dialog::backdrop { background: var(--overlay); }
   white-space: nowrap;
 }
 .agenda-table-wrap {
-  overflow: visible;
+  width: calc(100% + 52px);
+  max-width: calc(100% + 52px);
+  overflow: hidden;
   border: 1px solid var(--panel-border);
   border-radius: 0 0 var(--modal-radius) var(--modal-radius);
   margin: 0 -26px 0;
@@ -760,12 +762,23 @@ dialog::backdrop { background: var(--overlay); }
   font-size: 13px;
   line-height: 16px;
 }
+.agenda-col-client,
+.agenda-col-project,
+.agenda-col-task {
+  width: 30.5%;
+}
+.agenda-col-hours {
+  width: 8.5%;
+}
 .agenda-table th,
 .agenda-table td {
+  box-sizing: border-box;
   padding: 14px 30px;
   border-bottom: 0;
   text-align: left;
   vertical-align: top;
+  overflow: hidden;
+  overflow-wrap: anywhere;
 }
 .agenda-table th {
   position: sticky;
@@ -781,7 +794,9 @@ dialog::backdrop { background: var(--overlay); }
 }
 .agenda-table td:last-child,
 .agenda-table th:last-child {
-  width: 38px;
+  width: auto;
+  padding-left: 8px;
+  padding-right: 30px;
   text-align: right;
   white-space: nowrap;
   font-weight: 700;
