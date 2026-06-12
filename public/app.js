@@ -840,36 +840,43 @@ function bindHoverTooltips(container, rows) {
     if (!['project', 'task'].includes(type)) return;
     const row = byKey.get(`${type}:${element.dataset.id}`);
     if (!row) return;
-    element.addEventListener('mouseenter', () => showHoverTooltip(element, row));
+    element.addEventListener('mouseenter', (event) => showHoverTooltip(element, row, event));
+    element.addEventListener('mousemove', (event) => positionHoverTooltip(element, event));
     element.addEventListener('focusin', () => showHoverTooltip(element, row));
     element.addEventListener('mouseleave', hideHoverTooltip);
     element.addEventListener('focusout', hideHoverTooltip);
   });
 }
 
-function showHoverTooltip(anchor, row) {
+function showHoverTooltip(anchor, row, event = null) {
   if (!hoverTooltip) return;
   const html = tooltipHtml(row);
   if (!html) return;
   hoverTooltip.innerHTML = html;
   hoverTooltip.classList.remove('is-hidden');
-  positionHoverTooltip(anchor);
+  positionHoverTooltip(anchor, event);
 }
 
 function hideHoverTooltip() {
   hoverTooltip?.classList.add('is-hidden');
 }
 
-function positionHoverTooltip(anchor) {
+function positionHoverTooltip(anchor, event = null) {
   const rect = anchor.getBoundingClientRect();
   const tooltipRect = hoverTooltip.getBoundingClientRect();
   const viewportPadding = 10;
+  const baseLeft = event
+    ? event.clientX - (tooltipRect.width / 2)
+    : rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+  const baseTop = event
+    ? event.clientY + 18
+    : rect.bottom + 10;
   const left = Math.min(
-    Math.max(rect.left + (rect.width / 2) - (tooltipRect.width / 2), viewportPadding),
+    Math.max(baseLeft, viewportPadding),
     window.innerWidth - tooltipRect.width - viewportPadding
   );
   const top = Math.min(
-    rect.bottom + 10,
+    baseTop,
     window.innerHeight - tooltipRect.height - viewportPadding
   );
   hoverTooltip.style.left = `${left}px`;
