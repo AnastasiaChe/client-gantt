@@ -995,8 +995,8 @@ function fieldsFor(type, item) {
   const commonStatus = { name: 'status', label: 'Status', type: 'select', options: statuses, value: item.status || 'planned' };
   if (type === 'client') {
     return [
-      { name: 'name', label: 'Name', required: true, value: item.name },
-      { name: 'contact', label: 'Contact', value: item.contact },
+      { name: 'name', label: 'Name', required: true, value: item.name, wide: true },
+      { name: 'contact', label: 'Contact', value: item.contact, wide: true },
       { name: 'notes', label: 'Notes', type: 'textarea', wide: true, value: item.notes },
     ];
   }
