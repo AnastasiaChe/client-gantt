@@ -145,7 +145,7 @@ input[readonly] {
 textarea { min-height: 78px; resize: vertical; }
 .form-error { min-height: 16px; margin: 0; color: var(--danger); }
 
-.app { min-height: 100vh; padding: 15px 20px 18px; display: grid; grid-template-rows: 32px 46px auto 1fr; gap: 10px; }
+.app { min-height: 100vh; padding: 15px 20px 18px; display: grid; grid-template-rows: auto auto auto auto; gap: 10px; align-content: start; }
 .topbar, .filters {
   display: flex;
   align-items: center;
@@ -296,10 +296,11 @@ textarea { min-height: 78px; resize: vertical; }
 .gantt-shell {
   display: grid;
   grid-template-columns: var(--left) 8px minmax(0, 1fr);
+  align-items: start;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 12px 8px 8px 12px;
-  overflow: hidden;
+  overflow: visible;
 }
 .gantt-shell.is-resizing {
   cursor: col-resize;
