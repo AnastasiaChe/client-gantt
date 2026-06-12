@@ -986,6 +986,7 @@ dialog::backdrop { background: var(--overlay); }
   font-size: 11px;
   line-height: 14px;
   font-weight: 700;
+  position: relative;
 }
 .editor-field input,
 .editor-field select {
@@ -1005,6 +1006,53 @@ dialog::backdrop { background: var(--overlay); }
   font-weight: 400;
   letter-spacing: -.12px;
   min-width: 0;
+}
+.editor-field.is-invalid input,
+.editor-field.is-invalid select,
+.editor-field.is-invalid textarea {
+  border: 1px solid #FA8072;
+  box-shadow: inset 0px 0px 5px 0px #FA8072;
+  color: #963131;
+  outline: none;
+}
+.field-error-tooltip {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  z-index: 20;
+  display: flex;
+  width: 160px;
+  min-height: 35px;
+  transform: translateX(-50%);
+  align-items: center;
+  gap: 5px;
+  padding: 10px;
+  background: #FFE0DD;
+  border-radius: 8px;
+  box-shadow: 0px 10px 30px rgba(0, 0, 0, .1);
+  color: #963131;
+  font-size: 12px;
+  line-height: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.field-error-tooltip::before {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: calc(50% - 10px);
+  width: 19px;
+  height: 10px;
+  background: #FFE0DD;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+.field-error-tooltip i {
+  width: 13px;
+  height: 13px;
+  color: #963131;
+  font-size: 13px;
+  line-height: 13px;
+  text-align: center;
 }
 .radio-tabs {
   display: inline-grid;

@@ -130,6 +130,8 @@ function bindGlobalEvents() {
     editorForm.requestSubmit();
   });
   editorForm.addEventListener('submit', saveCurrent);
+  editorForm.addEventListener('input', clearFieldErrorFromEvent);
+  editorForm.addEventListener('change', clearFieldErrorFromEvent);
 }
 
 function initColumnResize() {
@@ -1011,6 +1013,7 @@ function bindDrag(bar) {
 function openEditor(type, id = null, defaults = {}) {
   editor = { type, id, addMore: false };
   editorError.textContent = '';
+  clearFieldErrors();
   deleteBtn.classList.toggle('is-hidden', !id);
   saveMoreBtn.classList.toggle('is-hidden', Boolean(id) || !['project', 'stage', 'task'].includes(type));
   const item = id ? getCollection(type).find((entry) => Number(entry.id) === id) : defaults;
@@ -1147,16 +1150,17 @@ function fieldsFor(type, item) {
 }
 
 function fieldHtml(field) {
-  const required = field.required ? ' required' : '';
+  const required = field.required ? ' data-required="true"' : '';
   const fieldClass = ['editor-field'];
   if (field.wide) fieldClass.push('wide');
   if (field.group) fieldClass.push(`field-${field.group}`);
   const classAttr = ` class="${fieldClass.join(' ')}"`;
   const value = escapeAttr(field.value ?? '');
   const placeholder = field.placeholder ? ` placeholder="${escapeAttr(field.placeholder)}"` : '';
+  const errorTooltip = '<span class="field-error-tooltip is-hidden" role="alert"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i><span>Please fill in the field.</span></span>';
 
   if (field.type === 'textarea') {
-    return `<label${classAttr}><span>${field.label}</span><textarea name="${field.name}"${placeholder}>${escapeHtml(field.value ?? '')}</textarea></label>`;
+    return `<label${classAttr}><span>${field.label}</span><textarea name="${field.name}"${required}${placeholder}>${escapeHtml(field.value ?? '')}</textarea>${errorTooltip}</label>`;
   }
   if (field.type === 'select') {
     const options = field.options.map((option) => {
@@ -1165,12 +1169,12 @@ function fieldHtml(field) {
       const projectAttr = option.project_id ? ` data-project-id="${escapeAttr(option.project_id)}"` : '';
       return `<option value="${escapeAttr(val)}"${projectAttr} ${String(val) === String(field.value) ? 'selected' : ''}>${escapeHtml(label)}</option>`;
     }).join('');
-    return `<label${classAttr}><span>${field.label}</span><select name="${field.name}"${required}>${options}</select></label>`;
+    return `<label${classAttr}><span>${field.label}</span><select name="${field.name}"${required}>${options}</select>${errorTooltip}</label>`;
   }
   if (field.type === 'radio') {
     const options = field.options.map((option) => `
       <label class="radio-chip">
-        <input type="radio" name="${field.name}" value="${escapeAttr(option.id)}" ${String(option.id) === String(field.value) ? 'checked' : ''}${required}>
+        <input type="radio" name="${field.name}" value="${escapeAttr(option.id)}" ${String(option.id) === String(field.value) ? 'checked' : ''}>
         <span>${escapeHtml(option.label)}</span>
       </label>
     `).join('');
@@ -1178,12 +1182,58 @@ function fieldHtml(field) {
   }
   const min = field.min !== undefined ? ` min="${escapeAttr(field.min)}"` : '';
   const step = field.step !== undefined ? ` step="${escapeAttr(field.step)}"` : '';
-  return `<label${classAttr}><span>${field.label}</span><input name="${field.name}" type="${field.type || 'text'}" value="${value}"${min}${step}${required}${placeholder}></label>`;
+  return `<label${classAttr}><span>${field.label}</span><input name="${field.name}" type="${field.type || 'text'}" value="${value}"${min}${step}${required}${placeholder}>${errorTooltip}</label>`;
+}
+
+function validateEditorRequiredFields() {
+  clearFieldErrors();
+  const requiredControls = Array.from(editorForm.querySelectorAll('[data-required="true"]'));
+  const invalid = requiredControls.find((control) => !String(control.value || '').trim());
+  if (!invalid) return true;
+  setFieldError(invalid, 'Please fill in the field.');
+  invalid.focus({ preventScroll: true });
+  invalid.scrollIntoView({ block: 'center', inline: 'nearest' });
+  return false;
+}
+
+function setFieldError(control, message) {
+  const field = control.closest('.editor-field');
+  if (!field) return;
+  field.classList.add('is-invalid');
+  control.setAttribute('aria-invalid', 'true');
+  const tooltip = field.querySelector('.field-error-tooltip');
+  const messageNode = tooltip?.querySelector('span');
+  if (tooltip && messageNode) {
+    messageNode.textContent = message;
+    tooltip.classList.remove('is-hidden');
+  }
+}
+
+function clearFieldErrors() {
+  editorForm.querySelectorAll('.editor-field.is-invalid').forEach((field) => {
+    field.classList.remove('is-invalid');
+    field.querySelector('input, select, textarea')?.removeAttribute('aria-invalid');
+    field.querySelector('.field-error-tooltip')?.classList.add('is-hidden');
+  });
+}
+
+function clearFieldErrorFromEvent(event) {
+  const control = event.target.closest?.('[data-required="true"]');
+  if (!control || String(control.value || '').trim() === '') return;
+  const field = control.closest('.editor-field');
+  if (!field) return;
+  field.classList.remove('is-invalid');
+  control.removeAttribute('aria-invalid');
+  field.querySelector('.field-error-tooltip')?.classList.add('is-hidden');
 }
 
 async function saveCurrent(event) {
   event.preventDefault();
   editorError.textContent = '';
+  if (!validateEditorRequiredFields()) {
+    editor.addMore = false;
+    return;
+  }
   const body = Object.fromEntries(new FormData(editorForm));
   const addMore = editor.addMore;
   editor.addMore = false;
