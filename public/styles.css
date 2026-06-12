@@ -615,7 +615,7 @@ dialog::backdrop { background: var(--overlay); }
 .editor-form header .icon-button,
 .agenda-panel header .icon-button {
   position: absolute;
-  right: 0;
+  right: -6px;
   top: -12px;
   width: 16px;
   height: 16px;
