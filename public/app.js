@@ -1151,6 +1151,7 @@ function fieldsFor(type, item) {
 
 function fieldHtml(field) {
   const required = field.required ? ' data-required="true"' : '';
+  const label = `${escapeHtml(field.label)}${field.required ? '<span class="required-mark">*</span>' : ''}`;
   const fieldClass = ['editor-field'];
   if (field.wide) fieldClass.push('wide');
   if (field.group) fieldClass.push(`field-${field.group}`);
@@ -1160,7 +1161,7 @@ function fieldHtml(field) {
   const errorTooltip = '<span class="field-error-tooltip is-hidden" role="alert"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i><span>Please fill in the field.</span></span>';
 
   if (field.type === 'textarea') {
-    return `<label${classAttr}><span>${field.label}</span><textarea name="${field.name}"${required}${placeholder}>${escapeHtml(field.value ?? '')}</textarea>${errorTooltip}</label>`;
+    return `<label${classAttr}><span>${label}</span><textarea name="${field.name}"${required}${placeholder}>${escapeHtml(field.value ?? '')}</textarea>${errorTooltip}</label>`;
   }
   if (field.type === 'select') {
     const options = field.options.map((option) => {
@@ -1169,7 +1170,7 @@ function fieldHtml(field) {
       const projectAttr = option.project_id ? ` data-project-id="${escapeAttr(option.project_id)}"` : '';
       return `<option value="${escapeAttr(val)}"${projectAttr} ${String(val) === String(field.value) ? 'selected' : ''}>${escapeHtml(label)}</option>`;
     }).join('');
-    return `<label${classAttr}><span>${field.label}</span><select name="${field.name}"${required}>${options}</select>${errorTooltip}</label>`;
+    return `<label${classAttr}><span>${label}</span><select name="${field.name}"${required}>${options}</select>${errorTooltip}</label>`;
   }
   if (field.type === 'radio') {
     const options = field.options.map((option) => `
@@ -1182,7 +1183,7 @@ function fieldHtml(field) {
   }
   const min = field.min !== undefined ? ` min="${escapeAttr(field.min)}"` : '';
   const step = field.step !== undefined ? ` step="${escapeAttr(field.step)}"` : '';
-  return `<label${classAttr}><span>${field.label}</span><input name="${field.name}" type="${field.type || 'text'}" value="${value}"${min}${step}${required}${placeholder}>${errorTooltip}</label>`;
+  return `<label${classAttr}><span>${label}</span><input name="${field.name}" type="${field.type || 'text'}" value="${value}"${min}${step}${required}${placeholder}>${errorTooltip}</label>`;
 }
 
 function validateEditorRequiredFields() {

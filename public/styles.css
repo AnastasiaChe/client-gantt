@@ -988,6 +988,9 @@ dialog::backdrop { background: var(--overlay); }
   font-weight: 700;
   position: relative;
 }
+.required-mark {
+  color: #963131;
+}
 .editor-field input,
 .editor-field select {
   height: 40px;
