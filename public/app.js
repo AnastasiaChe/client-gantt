@@ -500,7 +500,7 @@ function rowMeta(row) {
     return projectLoadSummary(row.item);
   }
   if (row.type === 'task') {
-    return [statusLabels[row.item.status], taskModeSummary(row.item)].filter(Boolean).join(' · ');
+    return taskModeSummary(row.item);
   }
   return statusLabels[row.item.status] || '';
 }
@@ -567,7 +567,7 @@ function daysFromToday(endDate) {
 function taskModeSummary(task) {
   if (!task.starts_on || !task.ends_on) return '';
   const duration = daysBetween(parseDate(task.starts_on), parseDate(task.ends_on)) + 1;
-  return `${duration}d · ${formatHoursCompact(taskHoursPerDay(task, duration))}/day`;
+  return `${duration}d ${formatHoursCompact(taskHoursPerDay(task, duration))}h/day`;
 }
 
 function collapseButton(row) {

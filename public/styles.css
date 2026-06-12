@@ -347,7 +347,7 @@ textarea { min-height: 78px; resize: vertical; }
 
 .gantt-shell {
   display: grid;
-  grid-template-columns: var(--left) 8px minmax(0, 1fr);
+  grid-template-columns: var(--left) 7px minmax(0, 1fr);
   align-items: start;
   background: var(--surface);
   border: 1px solid var(--line);
@@ -365,19 +365,20 @@ textarea { min-height: 78px; resize: vertical; }
 .column-resize-handle {
   width: 7px;
   min-width: 7px;
+  min-height: 0;
   height: 100%;
   padding: 0;
   border: 0;
-  border-left: 1px solid var(--line);
-  border-right: 1px solid var(--line);
   border-radius: 0;
-  background: var(--panel-border);
+  background: var(--bg-darker);
   color: transparent;
   cursor: col-resize;
+  box-shadow: inset -1px 0 0 var(--line);
 }
 .column-resize-handle:hover,
 .column-resize-handle:focus-visible {
-  background: var(--brand);
+  background: var(--bg-darker);
+  box-shadow: inset -1px 0 0 var(--muted);
   outline: none;
 }
 .names-head, .timeline-header { height: 83px; background: var(--panel-tint); border-bottom: 1px solid var(--panel-border); }
@@ -392,7 +393,13 @@ textarea { min-height: 78px; resize: vertical; }
   line-height: 1.25;
 }
 .names-head strong { font-size: 16px; color: var(--text); font-weight: 900; }
-.names-head span { color: var(--text); font-size: 11px; line-height: 14px; font-weight: 400; text-align: right; }
+.names-head span {
+  color: var(--text);
+  font-size: 11px;
+  line-height: normal;
+  font-weight: 400;
+  text-align: right;
+}
 #namesRows, .timeline-rows { position: relative; }
 .timeline-pane { overflow-x: auto; overflow-y: visible; }
 .timeline-header { position: sticky; top: 0; z-index: 5; min-width: max-content; }
@@ -518,7 +525,8 @@ textarea { min-height: 78px; resize: vertical; }
   box-shadow: none;
 }
 .mini-btn:hover,
-.mini-btn:focus-visible {
+.mini-btn:focus-visible,
+.mini-btn:active {
   background: var(--bg-disabled);
   border-color: var(--line);
   color: var(--text);
@@ -527,12 +535,23 @@ textarea { min-height: 78px; resize: vertical; }
 .icon-edit {
   width: 16px;
   height: 16px;
+  min-height: 16px;
+  flex: 0 0 16px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0;
   font-size: 8px;
+  line-height: 8px;
   border-radius: var(--button-radius);
+  background: var(--surface);
+  color: var(--text);
+}
+.icon-edit i {
+  width: 8px;
+  height: 8px;
+  font-size: 8px;
+  line-height: 8px;
 }
 .status-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--status-planned); flex: 0 0 auto; }
 .status-planned { background: var(--status-planned); }
@@ -895,7 +914,7 @@ dialog::backdrop { background: var(--overlay); }
 @media (max-width: 900px) {
   .app { padding: 10px; }
   .topbar { align-items: flex-start; flex-direction: column; }
-  .gantt-shell { --left: 320px; grid-template-columns: var(--left) 8px minmax(0, 1fr); }
+  .gantt-shell { --left: 320px; grid-template-columns: var(--left) 7px minmax(0, 1fr); }
   .editor-fields { grid-template-columns: 1fr; }
   .editor-field.field-half,
   .editor-field.field-third { grid-column: 1 / -1; }
