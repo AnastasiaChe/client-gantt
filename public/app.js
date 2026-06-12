@@ -54,6 +54,7 @@ const saveMoreBtn = $('#saveMoreBtn');
 const agendaDialog = $('#agendaDialog');
 const agendaRows = $('#agendaRows');
 const agendaSummary = $('#agendaSummary');
+const hoverTooltip = $('#hoverTooltip');
 
 let editor = { type: null, id: null, addMore: false };
 
@@ -473,11 +474,11 @@ function renderNames(rows) {
         <div class="name-main">
           ${childToggle}
           ${status}
-          <span class="name-text" title="${escapeHtml(row.text)}">${escapeHtml(row.text)}</span>
+          <span class="name-text">${escapeHtml(row.text)}</span>
           ${meta ? `<span class="meta">${escapeHtml(meta)}</span>` : ''}
         </div>
         <div class="row-actions">
-          <button class="mini-btn icon-edit" data-edit="${row.type}" data-id="${item.id}" aria-label="Edit ${escapeAttr(row.text)}" title="Edit">
+          <button class="mini-btn icon-edit" data-edit="${row.type}" data-id="${item.id}" aria-label="Edit ${escapeAttr(row.text)}">
             <i class="fa-solid fa-pen" aria-hidden="true"></i>
           </button>
         </div>
@@ -492,6 +493,7 @@ function renderNames(rows) {
     button.addEventListener('click', () => toggleCollapse(button.dataset.collapse, Number(button.dataset.id)));
   });
   bindListReorder(rows);
+  bindHoverTooltips(namesRows, rows);
 }
 
 function rowMeta(row) {
@@ -791,14 +793,14 @@ function renderTimeline(rows) {
       const width = durationDays * pxPerDay;
       const link = item.crm_url ? `data-url="${escapeAttr(item.crm_url)}"` : '';
       const levelClass = `bar-level-${row.type}`;
-      const doneMark = item.status === 'done' ? '<span class="done-mark" title="Done">✓</span>' : '';
+      const doneMark = item.status === 'done' ? '<span class="done-mark" aria-label="Done">✓</span>' : '';
       const taskLoadNote = row.type === 'task' ? ` · ${durationDays}d · ${formatHours(Number(item.estimated_hours || 0))} total · ${formatHours(taskHoursPerDay(item, durationDays))}/day · ${item.planning_mode === 'daily' ? 'auto from daily hours' : 'fixed total'}` : ` · ${durationDays}d`;
       bar = `
-        <div class="bar ${row.type} ${levelClass}" style="left:${left}px;width:${width}px" data-type="${row.type}" data-id="${item.id}" ${link} title="${escapeAttr(row.text)}: ${item.starts_on} - ${item.ends_on}${taskLoadNote}">
+        <div class="bar ${row.type} ${levelClass}" style="left:${left}px;width:${width}px" data-type="${row.type}" data-id="${item.id}" ${link} aria-label="${escapeAttr(row.text)}: ${item.starts_on} - ${item.ends_on}${taskLoadNote}">
           <span class="handle left" data-mode="resize-left"></span>
           ${doneMark}
           <span class="bar-label">${escapeHtml(row.text)}</span>
-          <button class="bar-edit" type="button" data-bar-edit="${row.type}" data-id="${item.id}" aria-label="Edit ${escapeAttr(row.text)}" title="Edit">
+          <button class="bar-edit" type="button" data-bar-edit="${row.type}" data-id="${item.id}" aria-label="Edit ${escapeAttr(row.text)}">
             <i class="fa-solid fa-pen" aria-hidden="true"></i>
           </button>
           <span class="handle right" data-mode="resize-right"></span>
@@ -819,6 +821,7 @@ function renderTimeline(rows) {
       openEditor(button.dataset.barEdit, Number(button.dataset.id));
     });
   });
+  bindHoverTooltips(timelineRows, rows);
 }
 
 function taskHoursPerDay(task, durationDays) {
@@ -827,6 +830,106 @@ function taskHoursPerDay(task, durationDays) {
   }
   const totalHours = Number(task.estimated_hours || 0);
   return totalHours && durationDays ? totalHours / durationDays : 0;
+}
+
+function bindHoverTooltips(container, rows) {
+  if (!hoverTooltip) return;
+  const byKey = new Map(rows.map((row) => [`${row.type}:${row.item.id}`, row]));
+  container.querySelectorAll('[data-row-type], .bar[data-type]').forEach((element) => {
+    const type = element.dataset.rowType || element.dataset.type;
+    if (!['project', 'task'].includes(type)) return;
+    const row = byKey.get(`${type}:${element.dataset.id}`);
+    if (!row) return;
+    element.addEventListener('mouseenter', () => showHoverTooltip(element, row));
+    element.addEventListener('focusin', () => showHoverTooltip(element, row));
+    element.addEventListener('mouseleave', hideHoverTooltip);
+    element.addEventListener('focusout', hideHoverTooltip);
+  });
+}
+
+function showHoverTooltip(anchor, row) {
+  if (!hoverTooltip) return;
+  const html = tooltipHtml(row);
+  if (!html) return;
+  hoverTooltip.innerHTML = html;
+  hoverTooltip.classList.remove('is-hidden');
+  positionHoverTooltip(anchor);
+}
+
+function hideHoverTooltip() {
+  hoverTooltip?.classList.add('is-hidden');
+}
+
+function positionHoverTooltip(anchor) {
+  const rect = anchor.getBoundingClientRect();
+  const tooltipRect = hoverTooltip.getBoundingClientRect();
+  const viewportPadding = 10;
+  const left = Math.min(
+    Math.max(rect.left + (rect.width / 2) - (tooltipRect.width / 2), viewportPadding),
+    window.innerWidth - tooltipRect.width - viewportPadding
+  );
+  const top = Math.min(
+    rect.bottom + 10,
+    window.innerHeight - tooltipRect.height - viewportPadding
+  );
+  hoverTooltip.style.left = `${left}px`;
+  hoverTooltip.style.top = `${Math.max(top, viewportPadding)}px`;
+}
+
+function tooltipHtml(row) {
+  const item = row.item;
+  const start = item.starts_on ? formatTooltipDate(item.starts_on) : '';
+  const end = item.ends_on ? formatTooltipDate(item.ends_on) : '';
+  const dateRange = start && end ? `${start} — ${end}` : 'No dates set';
+  const stats = tooltipStats(row);
+  return `
+    <p class="hover-tooltip-title">${escapeHtml(row.text)}</p>
+    <p class="hover-tooltip-dates">${escapeHtml(dateRange)}</p>
+    <div class="hover-tooltip-stats">
+      ${stats.map((entry, index) => index === 0
+        ? `<span class="hover-tooltip-badge">${escapeHtml(entry)}</span>`
+        : `<span>${escapeHtml(entry)}</span>`).join('')}
+    </div>
+  `;
+}
+
+function tooltipStats(row) {
+  if (row.type === 'task') {
+    const duration = row.item.starts_on && row.item.ends_on
+      ? daysBetween(parseDate(row.item.starts_on), parseDate(row.item.ends_on)) + 1
+      : 0;
+    const total = Number(row.item.estimated_hours || 0);
+    const perDay = duration ? taskHoursPerDay(row.item, duration) : Number(row.item.hours_per_day || 0);
+    return [
+      row.item.planning_mode === 'daily' ? 'Hours/day' : 'Fixed total',
+      duration ? `${duration}d` : '0d',
+      `${formatHours(total)} total`,
+      `${formatHours(perDay)}/day`,
+    ];
+  }
+  const duration = row.item.starts_on && row.item.ends_on
+    ? daysBetween(parseDate(row.item.starts_on), parseDate(row.item.ends_on)) + 1
+    : 0;
+  const total = projectTotalHours(row.item);
+  const capacity = Number(row.item.daily_capacity_hours || 0);
+  return [
+    statusLabels[row.item.status] || 'Project',
+    duration ? `${duration}d` : 'ongoing',
+    `${formatHours(total)} total`,
+    capacity ? `${formatHours(capacity)}/day` : 'no limit',
+  ];
+}
+
+function projectTotalHours(project) {
+  const projectStages = state.stages.filter((stage) => Number(stage.project_id) === Number(project.id));
+  const stageIds = new Set(projectStages.map((stage) => Number(stage.id)));
+  return state.tasks
+    .filter((task) => stageIds.has(Number(task.stage_id)))
+    .reduce((sum, task) => sum + Number(task.estimated_hours || 0), 0);
+}
+
+function formatTooltipDate(value) {
+  return String(value || '').replaceAll('-', '/');
 }
 
 function bindDrag(bar) {

@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;500;600;700;800;900&display=swap">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-  <link rel="stylesheet" href="styles.css?v=20260612-1628">
+  <link rel="stylesheet" href="styles.css?v=20260612-1845">
 </head>
 <body>
   <main id="login" class="login is-hidden">
@@ -49,11 +49,10 @@
       </div>
       <div class="utility-actions">
         <details class="tools-menu">
-          <summary class="icon-button tools-trigger" aria-label="Technical menu" title="Technical menu">
+          <summary class="icon-button tools-trigger" aria-label="Technical menu">
             <i class="fa-solid fa-gear" aria-hidden="true"></i>
           </summary>
           <div class="tools-panel">
-            <p class="tools-title">Technical</p>
             <a class="tools-item" href="api/index.php?action=export&format=csv">
               <i class="fa-solid fa-file-csv" aria-hidden="true"></i>
               Backup CSV
@@ -64,11 +63,11 @@
             </a>
             <button id="debugBtn" class="tools-item" type="button">
               <i class="fa-solid fa-bug" aria-hidden="true"></i>
-              Debug
+              Debug log
             </button>
             <button id="copyDebugBtn" class="tools-item" type="button">
               <i class="fa-solid fa-copy" aria-hidden="true"></i>
-              Copy debug
+              Copy debug log
             </button>
           </div>
         </details>
@@ -107,6 +106,7 @@
         <div id="timelineRows" class="timeline-rows"></div>
       </div>
     </section>
+    <div id="hoverTooltip" class="hover-tooltip is-hidden" role="tooltip"></div>
   </main>
 
   <dialog id="editorDialog">
@@ -156,6 +156,6 @@
     </section>
   </dialog>
 
-  <script src="app.js?v=20260612-1628"></script>
+  <script src="app.js?v=20260612-1845"></script>
 </body>
 </html>
