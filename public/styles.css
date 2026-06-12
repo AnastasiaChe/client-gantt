@@ -75,7 +75,9 @@ button, .button {
   font-weight: 700;
   cursor: pointer;
   text-decoration: none;
-  line-height: normal;
+  min-height: 32px;
+  font-size: 13px;
+  line-height: 16px;
   box-shadow: var(--button-shadow);
 }
 button i,
@@ -153,6 +155,15 @@ input, select, textarea {
   line-height: 15px;
   letter-spacing: -.01em;
 }
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 13 13'%3E%3Cpath d='M3 5l3.5 3L10 5' fill='none' stroke='%23909090' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 13px center;
+  background-size: 13px 13px;
+}
 input:focus, select:focus, textarea:focus {
   border-color: var(--brand);
   box-shadow: inset 0 0 5px var(--brand);
@@ -202,26 +213,36 @@ textarea { min-height: 78px; resize: vertical; }
   align-items: center;
   gap: 10px;
   padding: 8px 20px;
+  height: 32px;
 }
 .level-btn {
   color: #fff;
   border-color: transparent;
   box-shadow: var(--button-shadow);
+  height: 32px;
 }
 .level-client { background: linear-gradient(to bottom, var(--client-light), var(--client)); }
 .level-project { background: linear-gradient(to bottom, var(--project-light) 15.625%, var(--project)); }
 .level-stage { background: linear-gradient(to bottom, var(--stage-light), var(--stage)); }
 .level-task { background: linear-gradient(to bottom, var(--task-light), var(--task)); }
-.level-client:hover,
-.level-client:focus-visible { background: linear-gradient(to bottom, var(--client-light), var(--client)); }
-.level-project:hover,
-.level-project:focus-visible { background: linear-gradient(to bottom, var(--project-light) 15.625%, var(--project)); }
-.level-stage:hover,
-.level-stage:focus-visible { background: linear-gradient(to bottom, var(--stage-light), var(--stage)); }
-.level-task:hover,
-.level-task:focus-visible { background: linear-gradient(to bottom, var(--task-light), var(--task)); }
+.level-client:hover { background: linear-gradient(to bottom, var(--client-light), var(--client)); }
+.level-project:hover { background: linear-gradient(to bottom, var(--project-light) 15.625%, var(--project)); }
+.level-stage:hover { background: linear-gradient(to bottom, var(--stage-light), var(--stage)); }
+.level-task:hover { background: linear-gradient(to bottom, var(--task-light), var(--task)); }
 .level-btn:hover {
   box-shadow: 0 5px 10px rgba(0, 0, 0, .3);
+}
+.level-client:active,
+.level-client:focus-visible { background: linear-gradient(to bottom, var(--client), var(--client-light)); }
+.level-project:active,
+.level-project:focus-visible { background: linear-gradient(to bottom, var(--project), var(--project-light)); }
+.level-stage:active,
+.level-stage:focus-visible { background: linear-gradient(to bottom, var(--stage), var(--stage-light)); }
+.level-task:active,
+.level-task:focus-visible { background: linear-gradient(to bottom, var(--task), var(--task-light)); }
+.level-btn:active,
+.level-btn:focus-visible {
+  box-shadow: inset 0 4px 4px rgba(0, 0, 0, .1);
 }
 .tools-menu {
   position: relative;
@@ -290,10 +311,19 @@ textarea { min-height: 78px; resize: vertical; }
   border-radius: var(--card-radius);
   padding: 6px;
   height: 46px;
+  gap: 10px;
 }
-.filters input { max-width: 278px; height: 32px; }
-.filters select { max-width: 242px; height: 32px; }
+.filters input { width: 278px; max-width: 278px; height: 32px; }
+.filters select { width: 242px; max-width: 242px; height: 32px; }
+.filters button { height: 32px; min-height: 32px; }
 .save-status { color: var(--muted); font-size: 12px; }
+#rowCount {
+  margin-left: auto;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 15px;
+  font-weight: 400;
+}
 .app-error {
   background: var(--hours-danger);
   border: 1px solid #f3c4bd;
@@ -353,17 +383,16 @@ textarea { min-height: 78px; resize: vertical; }
 .names-head, .timeline-header { height: 83px; background: var(--panel-tint); border-bottom: 1px solid var(--panel-border); }
 .names-head {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: end;
-  gap: 2px;
-  padding: 0 20px 15px;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 15px 20px;
   font-weight: 700;
   color: var(--text);
   line-height: 1.25;
 }
 .names-head strong { font-size: 16px; color: var(--text); font-weight: 900; }
-.names-head span { color: var(--muted); font-size: 11px; line-height: 14px; font-weight: 400; }
+.names-head span { color: var(--text); font-size: 11px; line-height: 14px; font-weight: 400; text-align: right; }
 #namesRows, .timeline-rows { position: relative; }
 .timeline-pane { overflow-x: auto; overflow-y: visible; }
 .timeline-header { position: sticky; top: 0; z-index: 5; min-width: max-content; }
@@ -625,7 +654,7 @@ textarea { min-height: 78px; resize: vertical; }
   top: 0;
   bottom: 0;
   width: 2px;
-  background: rgba(88, 191, 149, .8);
+  background: var(--primary);
   z-index: 2;
 }
 
@@ -730,12 +759,28 @@ dialog::backdrop { background: var(--overlay); }
 .editor-form footer button {
   padding: 12px 30px;
   font-size: 16px;
+  line-height: 20px;
+  min-height: 44px;
   font-weight: 700;
 }
 .editor-form footer button[type="submit"] {
   box-shadow: var(--button-shadow);
 }
-.icon-button { width: 32px; height: 32px; padding: 0; border-color: var(--line); background: var(--surface); color: var(--text); font-size: 11px; }
+.icon-button {
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--button-radius);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 11px;
+  box-shadow: none;
+}
 .icon-button i { font-size: 11px; line-height: 11px; }
 .icon-button:hover,
 .icon-button:focus-visible,
@@ -762,11 +807,14 @@ dialog::backdrop { background: var(--overlay); }
   background: transparent;
   color: var(--text);
   font-size: 10px;
+  box-shadow: none;
 }
 .editor-form header .icon-button:hover,
 .editor-form header .icon-button:focus-visible,
+.editor-form header .icon-button:active,
 .agenda-panel header .icon-button:hover,
-.agenda-panel header .icon-button:focus-visible {
+.agenda-panel header .icon-button:focus-visible,
+.agenda-panel header .icon-button:active {
   background: transparent;
   border: 0;
   box-shadow: none;

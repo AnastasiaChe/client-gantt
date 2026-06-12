@@ -478,7 +478,7 @@ function renderNames(rows) {
         </div>
         <div class="row-actions">
           <button class="mini-btn icon-edit" data-edit="${row.type}" data-id="${item.id}" aria-label="Edit ${escapeAttr(row.text)}" title="Edit">
-            <i class="fa-solid fa-pencil" aria-hidden="true"></i>
+            <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
           </button>
         </div>
       </div>
@@ -497,7 +497,7 @@ function renderNames(rows) {
 function rowMeta(row) {
   if (row.type === 'client') return row.item.contact || '';
   if (row.type === 'project') {
-    return [statusLabels[row.item.status], projectLoadSummary(row.item)].filter(Boolean).join(' · ');
+    return projectLoadSummary(row.item);
   }
   if (row.type === 'task') {
     return [statusLabels[row.item.status], taskModeSummary(row.item)].filter(Boolean).join(' · ');
@@ -803,7 +803,7 @@ function renderTimeline(rows) {
           ${doneMark}
           <span class="bar-label">${escapeHtml(row.text)}</span>
           <button class="bar-edit" type="button" data-bar-edit="${row.type}" data-id="${item.id}" aria-label="Edit ${escapeAttr(row.text)}" title="Edit">
-            <i class="fa-solid fa-pencil" aria-hidden="true"></i>
+            <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
           </button>
           <span class="handle right" data-mode="resize-right"></span>
         </div>
@@ -1014,14 +1014,13 @@ function fieldsFor(type, item) {
   }
   if (type === 'stage') {
     return [
-      { name: 'project_id', label: 'Project', type: 'select', required: true, options: projectOptions(), value: item.project_id },
-      { name: 'name', label: 'Name', required: true, value: item.name },
-      commonStatus,
-      { name: 'color', label: 'Color', type: 'color', value: item.color || '#3383c0' },
-      { name: 'starts_on', label: 'Start', type: 'date', required: true, value: item.starts_on || toIso(new Date()) },
-      { name: 'ends_on', label: 'End', type: 'date', required: true, value: item.ends_on || toIso(addDays(new Date(), 7)) },
+      { name: 'project_id', label: 'Project', type: 'select', required: true, options: projectOptions(), value: item.project_id, wide: true },
+      { name: 'name', label: 'Stage Title', required: true, value: item.name, wide: true },
+      { ...commonStatus, group: 'third' },
+      { name: 'starts_on', label: 'Start', type: 'date', required: true, value: item.starts_on || toIso(new Date()), group: 'third' },
+      { name: 'ends_on', label: 'End', type: 'date', required: true, value: item.ends_on || toIso(addDays(new Date(), 7)), group: 'third' },
       { name: 'crm_url', label: 'CRM URL', type: 'url', wide: true, value: item.crm_url },
-      { name: 'description', label: 'Description', type: 'textarea', wide: true, value: item.description },
+      { name: 'description', label: 'Description', type: 'textarea', wide: true, value: item.description, placeholder: 'Add your description here' },
     ];
   }
   const selectedStage = state.stages.find((stage) => Number(stage.id) === Number(item.stage_id));
