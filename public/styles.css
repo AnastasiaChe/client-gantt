@@ -536,13 +536,13 @@ dialog::backdrop { background: var(--overlay); }
   padding: 27px 26px 0;
   display: grid;
   gap: 12px;
+  position: relative;
 }
 .agenda-panel header {
   display: flex;
   align-items: center;
   justify-content: flex-start;
   gap: 50px;
-  position: relative;
 }
 .agenda-summary {
   display: flex;
@@ -596,7 +596,7 @@ dialog::backdrop { background: var(--overlay); }
   color: var(--muted);
   text-align: center;
 }
-.editor-form { padding: 27px 26px 24px; display: grid; gap: 20px; }
+.editor-form { padding: 27px 26px 24px; display: grid; gap: 20px; position: relative; }
 .editor-form header, .editor-form footer { display: flex; align-items: center; gap: 8px; }
 .editor-form header { justify-content: space-between; }
 .editor-form footer {
@@ -615,8 +615,8 @@ dialog::backdrop { background: var(--overlay); }
 .editor-form header .icon-button,
 .agenda-panel header .icon-button {
   position: absolute;
-  right: -6px;
-  top: -12px;
+  right: 20px;
+  top: 15px;
   width: 16px;
   height: 16px;
   border: 0;
