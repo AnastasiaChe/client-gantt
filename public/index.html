@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;500;600;700;800;900&display=swap">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-  <link rel="stylesheet" href="styles.css?v=20260612-1515">
+  <link rel="stylesheet" href="styles.css?v=20260612-1045">
 </head>
 <body>
   <main id="login" class="login is-hidden">
@@ -34,21 +34,20 @@
 
   <main id="app" class="app is-hidden">
     <header class="topbar">
-      <div>
-        <p class="eyebrow">Client planning</p>
-        <div class="title-row">
-          <h1>Projects timeline</h1>
-          <button id="agendaBtn" class="secondary agenda-trigger" type="button">
-            <i class="fa-solid fa-list-check" aria-hidden="true"></i>
-            Today's agenda
-          </button>
-        </div>
+      <div class="logo-area">
+        <h1>Projects Gantt</h1>
+        <button id="agendaBtn" class="secondary agenda-trigger" type="button">
+          <i class="fa-solid fa-list" aria-hidden="true"></i>
+          Today’s Agenda
+        </button>
       </div>
       <div class="top-actions">
         <button id="addClientBtn" class="level-btn level-client">+ Client</button>
         <button id="addProjectBtn" class="level-btn level-project">+ Project</button>
         <button id="addStageBtn" class="level-btn level-stage">+ Stage</button>
         <button id="addTaskBtn" class="level-btn level-task">+ Task</button>
+      </div>
+      <div class="utility-actions">
         <details class="tools-menu">
           <summary class="icon-button tools-trigger" aria-label="Technical menu" title="Technical menu">
             <i class="fa-solid fa-gear" aria-hidden="true"></i>
@@ -73,7 +72,7 @@
             </button>
           </div>
         </details>
-        <button class="secondary" id="logoutBtn">Logout</button>
+        <button class="secondary logout-btn" id="logoutBtn">Log Out <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i></button>
       </div>
     </header>
 
@@ -121,7 +120,7 @@
         <button type="button" class="danger secondary" id="deleteBtn">Delete</button>
         <span class="dialog-spacer"></span>
         <button type="button" class="secondary" id="cancelBtn">Cancel</button>
-        <button type="button" class="secondary" id="saveMoreBtn">Save and Add More</button>
+        <button type="button" class="secondary" id="saveMoreBtn">Save &amp; Add More</button>
         <button type="submit">Save</button>
       </footer>
       <p class="form-error" id="editorError"></p>
@@ -131,13 +130,10 @@
   <dialog id="agendaDialog">
     <section class="agenda-panel">
       <header>
-        <div>
-          <p class="eyebrow">Today</p>
-          <h2>Today's agenda</h2>
-        </div>
+        <h2>What's Up for Today</h2>
+        <div id="agendaSummary" class="agenda-summary"></div>
         <button type="button" class="icon-button" id="closeAgendaBtn" aria-label="Close">×</button>
       </header>
-      <div id="agendaSummary" class="agenda-summary"></div>
       <div class="agenda-table-wrap">
         <table class="agenda-table">
           <thead>
@@ -154,6 +150,6 @@
     </section>
   </dialog>
 
-  <script src="app.js?v=20260612-1515"></script>
+  <script src="app.js?v=20260612-1045"></script>
 </body>
 </html>

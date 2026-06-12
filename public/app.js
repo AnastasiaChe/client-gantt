@@ -347,10 +347,14 @@ function openAgenda() {
   const items = todayAgendaItems(today);
   const totalHours = items.reduce((sum, item) => sum + item.hours, 0);
 
-  agendaSummary.textContent = `${today} · ${items.length} tasks · ${formatHours(totalHours)} planned`;
+  agendaSummary.innerHTML = `
+    <span>${escapeHtml(today)}</span>
+    <span>${items.length} tasks</span>
+    <span>${formatHours(totalHours)} planned</span>
+  `;
   agendaRows.innerHTML = items.length
-    ? items.map((item) => `
-      <tr>
+    ? items.map((item, index) => `
+      <tr class="${index % 2 === 0 ? 'agenda-alt' : ''}">
         <td>${escapeHtml(item.client)}</td>
         <td>${escapeHtml(item.project)}</td>
         <td>${escapeHtml(item.task)}</td>
@@ -904,11 +908,23 @@ function openEditor(type, id = null, defaults = {}) {
   deleteBtn.classList.toggle('is-hidden', !id);
   saveMoreBtn.classList.toggle('is-hidden', Boolean(id) || !['project', 'stage', 'task'].includes(type));
   const item = id ? getCollection(type).find((entry) => Number(entry.id) === id) : defaults;
-  editorTitle.textContent = `${id ? 'Edit' : 'Add'} ${type}`;
+  editorTitle.textContent = editorTitleText(type, Boolean(id));
+  editorDialog.className = `editor-dialog editor-${type}`;
   editorFields.innerHTML = fieldsFor(type, item).map(fieldHtml).join('');
   editorDialog.showModal();
   bindTaskProjectFilter(type);
   bindTaskPlanningFields(type);
+}
+
+function editorTitleText(type, isEdit) {
+  const action = isEdit ? 'Edit' : 'Add a New';
+  const labels = {
+    client: 'Client',
+    project: 'Project',
+    stage: 'Stage',
+    task: 'Task',
+  };
+  return `${action} ${labels[type] || type}`;
 }
 
 function bindTaskProjectFilter(type) {
@@ -986,14 +1002,14 @@ function fieldsFor(type, item) {
   }
   if (type === 'project') {
     return [
-      { name: 'client_id', label: 'Client', type: 'select', required: true, options: state.clients, value: item.client_id },
-      { name: 'name', label: 'Name', required: true, value: item.name },
-      commonStatus,
-      { name: 'starts_on', label: 'Start', type: 'date', value: item.starts_on },
-      { name: 'ends_on', label: 'End', type: 'date', value: item.ends_on },
-      { name: 'budget_hours', label: 'Budget hours', type: 'number', min: 0, step: 0.25, value: item.budget_hours },
-      { name: 'daily_capacity_hours', label: 'Max hours/day', type: 'number', min: 0, step: 0.25, value: item.daily_capacity_hours },
-      { name: 'notes', label: 'Notes', type: 'textarea', wide: true, value: item.notes },
+      { name: 'client_id', label: 'Client', type: 'select', required: true, options: state.clients, value: item.client_id, wide: true },
+      { name: 'name', label: 'Project Title', required: true, value: item.name, wide: true },
+      { name: 'budget_hours', label: 'Total hours', type: 'number', min: 0, step: 0.25, value: item.budget_hours, group: 'third' },
+      { name: 'daily_capacity_hours', label: 'Max hours/day', type: 'number', min: 0, step: 0.25, value: item.daily_capacity_hours, group: 'third' },
+      { ...commonStatus, group: 'third' },
+      { name: 'starts_on', label: 'Start', type: 'date', value: item.starts_on, group: 'half' },
+      { name: 'ends_on', label: 'End', type: 'date', value: item.ends_on, group: 'half' },
+      { name: 'notes', label: 'Notes', type: 'textarea', wide: true, value: item.notes, placeholder: 'Add your notes here' },
     ];
   }
   if (type === 'stage') {
@@ -1001,7 +1017,7 @@ function fieldsFor(type, item) {
       { name: 'project_id', label: 'Project', type: 'select', required: true, options: projectOptions(), value: item.project_id },
       { name: 'name', label: 'Name', required: true, value: item.name },
       commonStatus,
-      { name: 'color', label: 'Color', type: 'color', value: item.color || '#2563eb' },
+      { name: 'color', label: 'Color', type: 'color', value: item.color || '#3383c0' },
       { name: 'starts_on', label: 'Start', type: 'date', required: true, value: item.starts_on || toIso(new Date()) },
       { name: 'ends_on', label: 'End', type: 'date', required: true, value: item.ends_on || toIso(addDays(new Date(), 7)) },
       { name: 'crm_url', label: 'CRM URL', type: 'url', wide: true, value: item.crm_url },
@@ -1011,27 +1027,31 @@ function fieldsFor(type, item) {
   const selectedStage = state.stages.find((stage) => Number(stage.id) === Number(item.stage_id));
   const selectedProjectId = item.task_project_id || selectedStage?.project_id || state.projects[0]?.id || '';
   return [
-    { name: 'task_project_id', label: 'Project', type: 'select', required: true, options: projectOptions(), value: selectedProjectId },
-    { name: 'stage_id', label: 'Stage', type: 'select', required: true, options: stageOptions(selectedProjectId, true), value: item.stage_id },
-    { name: 'name', label: 'Name', required: true, value: item.name },
-    commonStatus,
+    { name: 'task_project_id', label: 'Project', type: 'select', required: true, options: projectOptions(), value: selectedProjectId, group: 'half' },
+    { name: 'stage_id', label: 'Stage', type: 'select', required: true, options: stageOptions(selectedProjectId, true), value: item.stage_id, group: 'half' },
+    { name: 'name', label: 'Task Title', required: true, value: item.name, group: 'half' },
+    { ...commonStatus, group: 'half' },
     { name: 'planning_mode', label: 'Planning mode', type: 'radio', options: planningModes, value: item.planning_mode || 'total', wide: true },
-    { name: 'estimated_hours', label: 'Total hours', type: 'number', min: 0, step: 0.25, value: item.estimated_hours || 0 },
-    { name: 'hours_per_day', label: 'Hours/day', type: 'number', min: 0, step: 0.25, value: item.hours_per_day || 0 },
-    { name: 'starts_on', label: 'Start', type: 'date', required: true, value: item.starts_on || toIso(new Date()) },
-    { name: 'ends_on', label: 'End', type: 'date', required: true, value: item.ends_on || toIso(addDays(new Date(), 3)) },
+    { name: 'estimated_hours', label: 'Total hours', type: 'number', min: 0, step: 0.25, value: item.estimated_hours || 0, group: 'half' },
+    { name: 'hours_per_day', label: 'Hours/day', type: 'number', min: 0, step: 0.25, value: item.hours_per_day || 0, group: 'half' },
+    { name: 'starts_on', label: 'Start', type: 'date', required: true, value: item.starts_on || toIso(new Date()), group: 'half' },
+    { name: 'ends_on', label: 'End', type: 'date', required: true, value: item.ends_on || toIso(addDays(new Date(), 3)), group: 'half' },
     { name: 'crm_url', label: 'CRM URL', type: 'url', wide: true, value: item.crm_url },
-    { name: 'description', label: 'Description', type: 'textarea', wide: true, value: item.description },
+    { name: 'description', label: 'Description', type: 'textarea', wide: true, value: item.description, placeholder: 'Add your description here' },
   ];
 }
 
 function fieldHtml(field) {
   const required = field.required ? ' required' : '';
-  const wide = field.wide ? ' class="wide"' : '';
+  const fieldClass = ['editor-field'];
+  if (field.wide) fieldClass.push('wide');
+  if (field.group) fieldClass.push(`field-${field.group}`);
+  const classAttr = ` class="${fieldClass.join(' ')}"`;
   const value = escapeAttr(field.value ?? '');
+  const placeholder = field.placeholder ? ` placeholder="${escapeAttr(field.placeholder)}"` : '';
 
   if (field.type === 'textarea') {
-    return `<label${wide}>${field.label}<textarea name="${field.name}">${escapeHtml(field.value ?? '')}</textarea></label>`;
+    return `<label${classAttr}><span>${field.label}</span><textarea name="${field.name}"${placeholder}>${escapeHtml(field.value ?? '')}</textarea></label>`;
   }
   if (field.type === 'select') {
     const options = field.options.map((option) => {
@@ -1040,7 +1060,7 @@ function fieldHtml(field) {
       const projectAttr = option.project_id ? ` data-project-id="${escapeAttr(option.project_id)}"` : '';
       return `<option value="${escapeAttr(val)}"${projectAttr} ${String(val) === String(field.value) ? 'selected' : ''}>${escapeHtml(label)}</option>`;
     }).join('');
-    return `<label${wide}>${field.label}<select name="${field.name}"${required}>${options}</select></label>`;
+    return `<label${classAttr}><span>${field.label}</span><select name="${field.name}"${required}>${options}</select></label>`;
   }
   if (field.type === 'radio') {
     const options = field.options.map((option) => `
@@ -1049,11 +1069,11 @@ function fieldHtml(field) {
         <span>${escapeHtml(option.label)}</span>
       </label>
     `).join('');
-    return `<div class="field-group${field.wide ? ' wide' : ''}"><span>${field.label}</span><div class="radio-tabs">${options}</div></div>`;
+    return `<div${classAttr}><span>${field.label}</span><div class="radio-tabs">${options}</div></div>`;
   }
   const min = field.min !== undefined ? ` min="${escapeAttr(field.min)}"` : '';
   const step = field.step !== undefined ? ` step="${escapeAttr(field.step)}"` : '';
-  return `<label${wide}>${field.label}<input name="${field.name}" type="${field.type || 'text'}" value="${value}"${min}${step}${required}></label>`;
+  return `<label${classAttr}><span>${field.label}</span><input name="${field.name}" type="${field.type || 'text'}" value="${value}"${min}${step}${required}${placeholder}></label>`;
 }
 
 async function saveCurrent(event) {
@@ -1098,7 +1118,7 @@ function nextDefaults(type, previous) {
     return {
       project_id: previous.project_id,
       status: previous.status || 'planned',
-      color: previous.color || '#2563eb',
+      color: previous.color || '#3383c0',
       starts_on: previous.starts_on,
       ends_on: previous.ends_on,
     };
@@ -1249,12 +1269,12 @@ function weekLabel(date) {
 
 function colorForStatus(status) {
   return {
-    planned: '#64748b',
-    in_progress: '#2563eb',
-    waiting: '#d97706',
-    done: '#16a34a',
-    paused: '#7c3aed',
-  }[status] || '#64748b';
+    planned: '#757575',
+    in_progress: '#ABD8F5',
+    waiting: '#EECD79',
+    done: '#58BF95',
+    paused: '#757575',
+  }[status] || '#757575';
 }
 
 
