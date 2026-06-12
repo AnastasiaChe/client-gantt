@@ -778,7 +778,6 @@ function sortLocalCollection(type) {
 
 function renderTimeline(rows) {
   const days = daysBetween(state.range.start, state.range.end);
-  const overlaps = findOverlaps(rows);
   const todayOffset = offsetForDate(toIso(new Date()));
 
   timelineRows.style.width = `${days * pxPerDay}px`;
@@ -790,15 +789,12 @@ function renderTimeline(rows) {
       const left = offsetForDate(item.starts_on) * pxPerDay;
       const durationDays = daysBetween(parseDate(item.starts_on), parseDate(item.ends_on)) + 1;
       const width = durationDays * pxPerDay;
-      const hasOverlap = overlaps.has(`${row.type}:${item.id}`);
-      const overlap = hasOverlap ? ' overlap' : '';
       const link = item.crm_url ? `data-url="${escapeAttr(item.crm_url)}"` : '';
       const levelClass = `bar-level-${row.type}`;
       const doneMark = item.status === 'done' ? '<span class="done-mark" title="Done">✓</span>' : '';
-      const overlapNote = hasOverlap ? ' · overlaps with another item' : '';
       const taskLoadNote = row.type === 'task' ? ` · ${durationDays}d · ${formatHours(Number(item.estimated_hours || 0))} total · ${formatHours(taskHoursPerDay(item, durationDays))}/day · ${item.planning_mode === 'daily' ? 'auto from daily hours' : 'fixed total'}` : ` · ${durationDays}d`;
       bar = `
-        <div class="bar ${row.type} ${levelClass}${overlap}" style="left:${left}px;width:${width}px" data-type="${row.type}" data-id="${item.id}" ${link} title="${escapeAttr(row.text)}: ${item.starts_on} - ${item.ends_on}${taskLoadNote}${overlapNote}">
+        <div class="bar ${row.type} ${levelClass}" style="left:${left}px;width:${width}px" data-type="${row.type}" data-id="${item.id}" ${link} title="${escapeAttr(row.text)}: ${item.starts_on} - ${item.ends_on}${taskLoadNote}">
           <span class="handle left" data-mode="resize-left"></span>
           ${doneMark}
           <span class="bar-label">${escapeHtml(row.text)}</span>
@@ -1184,26 +1180,6 @@ function getRange(rows) {
   const min = new Date(Math.min(...dates));
   const max = new Date(Math.max(...dates));
   return { start: addDays(min, -3), end: addDays(max, 7) };
-}
-
-function findOverlaps(rows) {
-  const overlaps = new Set();
-  const dated = rows.filter((row) => ['stage', 'task'].includes(row.type) && row.item.starts_on && row.item.ends_on);
-  for (let i = 0; i < dated.length; i++) {
-    for (let j = i + 1; j < dated.length; j++) {
-      const a = dated[i];
-      const b = dated[j];
-      const sameScope = a.type === 'stage'
-        ? a.project?.id === b.project?.id
-        : a.stage?.id === b.stage?.id;
-      if (!sameScope) continue;
-      if (a.item.starts_on <= b.item.ends_on && b.item.starts_on <= a.item.ends_on) {
-        overlaps.add(`${a.type}:${a.item.id}`);
-        overlaps.add(`${b.type}:${b.item.id}`);
-      }
-    }
-  }
-  return overlaps;
 }
 
 function projectOptions() {

@@ -667,10 +667,6 @@ textarea { min-height: 78px; resize: vertical; }
 .bar-level-task { background: linear-gradient(to bottom, var(--task-light), var(--task)) !important; }
 .bar-level-client { background: linear-gradient(to bottom, var(--client-light), var(--client)) !important; }
 .bar.task { height: 29px; top: 2px; opacity: 1; border-radius: var(--card-radius); }
-.bar.overlap {
-  border: 2px dashed #fff;
-  box-shadow: var(--button-shadow);
-}
 .bar:active { cursor: grabbing; }
 .done-mark {
   display: inline-flex;
