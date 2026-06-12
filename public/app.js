@@ -132,6 +132,7 @@ function bindGlobalEvents() {
   editorForm.addEventListener('submit', saveCurrent);
   editorForm.addEventListener('input', clearFieldErrorFromEvent);
   editorForm.addEventListener('change', clearFieldErrorFromEvent);
+  editorForm.addEventListener('change', updateStatusSelectFromEvent);
 }
 
 function initColumnResize() {
@@ -1021,6 +1022,7 @@ function openEditor(type, id = null, defaults = {}) {
   editorDialog.className = `editor-dialog editor-${type}`;
   editorFields.innerHTML = fieldsFor(type, item).map(fieldHtml).join('');
   editorDialog.showModal();
+  syncStatusSelectDots();
   bindTaskProjectFilter(type);
   bindTaskPlanningFields(type);
 }
@@ -1155,7 +1157,10 @@ function fieldHtml(field) {
   const fieldClass = ['editor-field'];
   if (field.wide) fieldClass.push('wide');
   if (field.group) fieldClass.push(`field-${field.group}`);
-  const classAttr = ` class="${fieldClass.join(' ')}"`;
+  if (field.name === 'status') fieldClass.push('status-select-field');
+  if (field.type === 'date') fieldClass.push('date-field');
+  const statusValueAttr = field.name === 'status' ? ` data-status-value="${escapeAttr(field.value || 'planned')}"` : '';
+  const classAttr = ` class="${fieldClass.join(' ')}"${statusValueAttr}`;
   const value = escapeAttr(field.value ?? '');
   const placeholder = field.placeholder ? ` placeholder="${escapeAttr(field.placeholder)}"` : '';
   const errorTooltip = '<span class="field-error-tooltip is-hidden" role="alert"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i><span>Please fill in the field.</span></span>';
@@ -1170,7 +1175,8 @@ function fieldHtml(field) {
       const projectAttr = option.project_id ? ` data-project-id="${escapeAttr(option.project_id)}"` : '';
       return `<option value="${escapeAttr(val)}"${projectAttr} ${String(val) === String(field.value) ? 'selected' : ''}>${escapeHtml(label)}</option>`;
     }).join('');
-    return `<label${classAttr}><span>${label}</span><select name="${field.name}"${required}>${options}</select>${errorTooltip}</label>`;
+    const statusDot = field.name === 'status' ? '<span class="select-status-dot" aria-hidden="true"></span>' : '';
+    return `<label${classAttr}><span>${label}</span><select name="${field.name}"${required}>${options}</select>${statusDot}${errorTooltip}</label>`;
   }
   if (field.type === 'radio') {
     const options = field.options.map((option) => `
@@ -1183,7 +1189,20 @@ function fieldHtml(field) {
   }
   const min = field.min !== undefined ? ` min="${escapeAttr(field.min)}"` : '';
   const step = field.step !== undefined ? ` step="${escapeAttr(field.step)}"` : '';
-  return `<label${classAttr}><span>${label}</span><input name="${field.name}" type="${field.type || 'text'}" value="${value}"${min}${step}${required}${placeholder}>${errorTooltip}</label>`;
+  const dateIcon = field.type === 'date' ? '<i class="fa-regular fa-calendar date-icon" aria-hidden="true"></i>' : '';
+  return `<label${classAttr}><span>${label}</span><input name="${field.name}" type="${field.type || 'text'}" value="${value}"${min}${step}${required}${placeholder}>${dateIcon}${errorTooltip}</label>`;
+}
+
+function syncStatusSelectDots() {
+  editorForm.querySelectorAll('.status-select-field select[name="status"]').forEach((select) => {
+    select.closest('.status-select-field')?.setAttribute('data-status-value', select.value || 'planned');
+  });
+}
+
+function updateStatusSelectFromEvent(event) {
+  const select = event.target.closest?.('.status-select-field select[name="status"]');
+  if (!select) return;
+  select.closest('.status-select-field')?.setAttribute('data-status-value', select.value || 'planned');
 }
 
 function validateEditorRequiredFields() {

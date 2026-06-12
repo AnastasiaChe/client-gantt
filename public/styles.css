@@ -1001,6 +1001,44 @@ dialog::backdrop { background: var(--overlay); }
   letter-spacing: -.12px;
   min-width: 0;
 }
+.editor-field.status-select-field select {
+  padding-left: 33px;
+}
+.editor-field.date-field input {
+  padding-right: 36px;
+}
+.select-status-dot {
+  position: absolute;
+  left: 13px;
+  top: 31px;
+  z-index: 1;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--status-planned);
+  pointer-events: none;
+}
+.status-select-field[data-status-value="planned"] .select-status-dot { background: var(--status-planned); }
+.status-select-field[data-status-value="in_progress"] .select-status-dot { background: var(--status-in-progress); }
+.status-select-field[data-status-value="waiting"] .select-status-dot { background: var(--status-waiting); }
+.status-select-field[data-status-value="done"] .select-status-dot { background: var(--status-done); }
+.status-select-field[data-status-value="paused"] .select-status-dot { background: var(--status-paused); }
+.date-field input::-webkit-calendar-picker-indicator {
+  opacity: 0;
+}
+.date-field .date-icon {
+  position: absolute;
+  right: 13px;
+  top: 29px;
+  z-index: 1;
+  width: 13px;
+  height: 13px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 13px;
+  text-align: center;
+  pointer-events: none;
+}
 .editor-field textarea {
   min-height: 133px;
   padding: 8px 13px;
