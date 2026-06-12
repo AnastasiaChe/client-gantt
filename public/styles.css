@@ -60,7 +60,7 @@
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; overflow-x: hidden; background: var(--bg); color: var(--text); font-size: 13px; line-height: 16px; }
+body { margin: 0; background: var(--bg); color: var(--text); font-size: 13px; line-height: 16px; }
 button, input, select, textarea { font: inherit; }
 button, .button {
   display: inline-flex;
@@ -273,7 +273,8 @@ textarea { min-height: 78px; resize: vertical; }
 .tools-panel {
   position: absolute;
   top: calc(100% + 10px);
-  right: -14px;
+  right: 0;
+  transform: translateX(14px);
   z-index: 20;
   width: 227px;
   max-width: calc(100vw - 40px);
