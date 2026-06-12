@@ -478,7 +478,7 @@ function renderNames(rows) {
         </div>
         <div class="row-actions">
           <button class="mini-btn icon-edit" data-edit="${row.type}" data-id="${item.id}" aria-label="Edit ${escapeAttr(row.text)}" title="Edit">
-            <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+            <i class="fa-solid fa-pen" aria-hidden="true"></i>
           </button>
         </div>
       </div>
@@ -803,7 +803,7 @@ function renderTimeline(rows) {
           ${doneMark}
           <span class="bar-label">${escapeHtml(row.text)}</span>
           <button class="bar-edit" type="button" data-bar-edit="${row.type}" data-id="${item.id}" aria-label="Edit ${escapeAttr(row.text)}" title="Edit">
-            <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+            <i class="fa-solid fa-pen" aria-hidden="true"></i>
           </button>
           <span class="handle right" data-mode="resize-right"></span>
         </div>
