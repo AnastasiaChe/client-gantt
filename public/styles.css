@@ -1396,8 +1396,9 @@ dialog::backdrop { background: var(--overlay); }
     grid-row: 1;
     width: 148px;
     justify-self: start;
-    padding-left: 20px;
-    padding-right: 20px;
+    padding-left: 14px;
+    padding-right: 14px;
+    white-space: nowrap;
   }
   .editor-form footer button[type="submit"] {
     grid-column: 2;
@@ -1427,14 +1428,30 @@ dialog::backdrop { background: var(--overlay); }
   #agendaDialog {
     width: min(340px, calc(100vw - 20px));
   }
+  #agendaDialog dialog,
+  #agendaDialog {
+    max-width: calc(100vw - 20px);
+  }
+  .agenda-panel {
+    padding: 27px 26px 0;
+    gap: 24px;
+  }
   .agenda-panel header {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 10px;
+    width: 291px;
+  }
+  .agenda-panel h2 {
+    font-size: 20px;
+    line-height: 25px;
   }
   .agenda-summary {
-    gap: 24px;
-    flex-wrap: wrap;
+    width: 291px;
+    gap: 15px;
+    flex-wrap: nowrap;
+    font-size: 16px;
+    line-height: 20px;
   }
   .agenda-table thead,
   .agenda-table colgroup {
@@ -1453,9 +1470,15 @@ dialog::backdrop { background: var(--overlay); }
     grid-template-rows: repeat(3, auto);
     gap: 10px;
     padding: 14px 30px;
+    background: var(--bg-darker);
+  }
+  .agenda-table tr.agenda-alt {
+    background: var(--surface);
   }
   .agenda-table td {
     padding: 0;
+    background: transparent !important;
+    border: 0;
   }
   .agenda-table td:nth-child(1),
   .agenda-table td:nth-child(2),
@@ -1470,6 +1493,7 @@ dialog::backdrop { background: var(--overlay); }
     width: 135px;
     padding: 0;
     text-align: left;
+    justify-self: start;
     font-weight: 700;
   }
   .name-row[draggable="true"] {
