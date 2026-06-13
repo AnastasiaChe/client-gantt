@@ -1037,7 +1037,7 @@ dialog::backdrop { background: var(--overlay); }
   font-size: 13px;
   line-height: 13px;
   text-align: center;
-  pointer-events: none;
+  cursor: pointer;
 }
 .editor-field textarea {
   min-height: 133px;

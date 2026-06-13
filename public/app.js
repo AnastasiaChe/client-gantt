@@ -135,6 +135,7 @@ function bindGlobalEvents() {
   editorForm.addEventListener('input', clearFieldErrorFromEvent);
   editorForm.addEventListener('change', clearFieldErrorFromEvent);
   editorForm.addEventListener('change', updateStatusSelectFromEvent);
+  editorForm.addEventListener('click', openDatePickerFromIcon);
 }
 
 function initColumnResize() {
@@ -1226,6 +1227,17 @@ function updateStatusSelectFromEvent(event) {
   const select = event.target.closest?.('.status-select-field select[name="status"]');
   if (!select) return;
   select.closest('.status-select-field')?.setAttribute('data-status-value', select.value || 'planned');
+}
+
+function openDatePickerFromIcon(event) {
+  const icon = event.target.closest?.('.date-icon');
+  if (!icon) return;
+  const input = icon.closest('.date-field')?.querySelector('input[type="date"]');
+  if (!input) return;
+  input.focus();
+  if (typeof input.showPicker === 'function') {
+    input.showPicker();
+  }
 }
 
 function validateEditorRequiredFields() {
