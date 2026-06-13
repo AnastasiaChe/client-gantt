@@ -1435,6 +1435,7 @@ dialog::backdrop { background: var(--overlay); }
   .agenda-panel {
     padding: 27px 26px 0;
     gap: 24px;
+    overflow: hidden;
   }
   .agenda-panel header {
     display: grid;
@@ -1454,9 +1455,12 @@ dialog::backdrop { background: var(--overlay); }
     line-height: 20px;
   }
   .agenda-table-wrap {
-    width: calc(100% + 52px);
-    max-width: calc(100% + 52px);
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
     overflow: hidden;
+    border-left: 0;
+    border-right: 0;
   }
   .agenda-table thead,
   .agenda-table colgroup {
