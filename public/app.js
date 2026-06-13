@@ -56,6 +56,8 @@ const agendaRows = $('#agendaRows');
 const agendaSummary = $('#agendaSummary');
 const hoverTooltip = $('#hoverTooltip');
 const toolsMenu = document.querySelector('.tools-menu');
+const addMenu = document.querySelector('.add-menu');
+const filtersPanel = document.querySelector('.filters');
 
 let editor = { type: null, id: null, addMore: false };
 
@@ -116,14 +118,21 @@ function bindGlobalEvents() {
   $('#agendaBtn').addEventListener('click', openAgenda);
   $('#closeAgendaBtn').addEventListener('click', () => agendaDialog.close());
   $('#resetFiltersBtn').addEventListener('click', resetFilters);
+  $('#filterToggleBtn').addEventListener('click', () => filtersPanel.classList.toggle('is-open'));
   $('#debugBtn').addEventListener('click', runDebug);
   $('#copyDebugBtn').addEventListener('click', copyDebug);
-  document.addEventListener('click', closeToolsMenuOnOutsideClick);
+  document.addEventListener('click', closeMenusOnOutsideClick);
 
   $('#addClientBtn').addEventListener('click', () => openEditor('client'));
   $('#addProjectBtn').addEventListener('click', () => openEditor('project'));
   $('#addStageBtn').addEventListener('click', () => openEditor('stage'));
   $('#addTaskBtn').addEventListener('click', () => openEditor('task'));
+  document.querySelectorAll('[data-add-type]').forEach((button) => {
+    button.addEventListener('click', () => {
+      addMenu.open = false;
+      openEditor(button.dataset.addType);
+    });
+  });
   $('#closeEditorBtn').addEventListener('click', () => editorDialog.close());
   $('#cancelBtn').addEventListener('click', () => editorDialog.close());
   deleteBtn.addEventListener('click', deleteCurrent);
@@ -292,9 +301,13 @@ function resetFilters() {
   render();
 }
 
-function closeToolsMenuOnOutsideClick(event) {
-  if (!toolsMenu?.open || toolsMenu.contains(event.target)) return;
-  toolsMenu.open = false;
+function closeMenusOnOutsideClick(event) {
+  if (toolsMenu?.open && !toolsMenu.contains(event.target)) {
+    toolsMenu.open = false;
+  }
+  if (addMenu?.open && !addMenu.contains(event.target)) {
+    addMenu.open = false;
+  }
 }
 
 function showAppError(message) {

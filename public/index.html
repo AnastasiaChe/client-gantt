@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;500;600;700;800;900&display=swap">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-  <link rel="stylesheet" href="styles.css?v=20260613-0035">
+  <link rel="stylesheet" href="styles.css?v=20260613-0115">
 </head>
 <body>
   <main id="login" class="login is-hidden">
@@ -47,6 +47,18 @@
         <button id="addStageBtn" class="level-btn level-stage"><i class="fa-solid fa-plus" aria-hidden="true"></i>Stage</button>
         <button id="addTaskBtn" class="level-btn level-task"><i class="fa-solid fa-plus" aria-hidden="true"></i>Task</button>
       </div>
+      <details class="add-menu">
+        <summary class="level-btn level-client add-menu-trigger" aria-label="Add item">
+          <i class="fa-solid fa-plus" aria-hidden="true"></i>
+          Add
+        </summary>
+        <div class="add-panel">
+          <button class="level-btn level-client" type="button" data-add-type="client"><i class="fa-solid fa-plus" aria-hidden="true"></i>Client</button>
+          <button class="level-btn level-project" type="button" data-add-type="project"><i class="fa-solid fa-plus" aria-hidden="true"></i>Project</button>
+          <button class="level-btn level-stage" type="button" data-add-type="stage"><i class="fa-solid fa-plus" aria-hidden="true"></i>Stage</button>
+          <button class="level-btn level-task" type="button" data-add-type="task"><i class="fa-solid fa-plus" aria-hidden="true"></i>Task</button>
+        </div>
+      </details>
       <div class="utility-actions">
         <details class="tools-menu">
           <summary class="icon-button tools-trigger" aria-label="Technical menu">
@@ -76,6 +88,7 @@
     </header>
 
     <section class="filters">
+      <button id="filterToggleBtn" class="secondary filter-toggle" type="button">Filter <i class="fa-solid fa-filter" aria-hidden="true"></i></button>
       <input id="searchInput" placeholder="Search client, project, task">
       <select id="clientFilter"><option value="">All clients</option></select>
       <select id="statusFilter">
@@ -156,6 +169,6 @@
     </section>
   </dialog>
 
-  <script src="app.js?v=20260613-0035"></script>
+  <script src="app.js?v=20260613-0115"></script>
 </body>
 </html>
