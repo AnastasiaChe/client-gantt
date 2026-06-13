@@ -2,6 +2,14 @@
 
 Compact private Gantt planner for client projects.
 
+## License And Use
+
+This project is source-available for personal and internal use only.
+
+You may use and modify it for your own planning or internal work. You may not sell, resell, rent, sublicense, commercially redistribute, or offer it as a paid hosted service/SaaS.
+
+See `LICENSE.md` for the full terms.
+
 ## Stack
 
 - PHP 8+
