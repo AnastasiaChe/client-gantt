@@ -525,6 +525,7 @@ function renderNames(rows) {
   namesRows.querySelectorAll('[data-collapse]').forEach((button) => {
     button.addEventListener('click', () => toggleCollapse(button.dataset.collapse, Number(button.dataset.id)));
   });
+  bindMobileRowActions();
   bindListReorder(rows);
   bindHoverTooltips(namesRows, rows);
 }
@@ -534,6 +535,24 @@ function toggleClientFocus(clientId) {
   state.filters.client = nextClientId;
   $('#clientFilter').value = nextClientId;
   render();
+}
+
+function bindMobileRowActions() {
+  namesRows.querySelectorAll('.name-row').forEach((rowEl) => {
+    rowEl.addEventListener('click', (event) => {
+      if (!window.matchMedia('(max-width: 700px)').matches) return;
+      if (rowEl.dataset.justDragged === 'true') {
+        event.preventDefault();
+        rowEl.dataset.justDragged = '';
+        return;
+      }
+      if (event.target.closest('button, a, input, select, textarea')) return;
+      namesRows.querySelectorAll('.name-row.is-actions-open').forEach((entry) => {
+        if (entry !== rowEl) entry.classList.remove('is-actions-open');
+      });
+      rowEl.classList.toggle('is-actions-open');
+    });
+  });
 }
 
 function rowMeta(row) {
@@ -664,8 +683,75 @@ function pruneCollapsedState() {
 
 function bindListReorder(rows) {
   let dragged = null;
+  let pointerDrag = null;
 
   namesRows.querySelectorAll('.name-row[draggable="true"]').forEach((rowEl) => {
+    rowEl.addEventListener('pointerdown', (event) => {
+      if (!window.matchMedia('(max-width: 700px)').matches) return;
+      if (event.pointerType === 'mouse') return;
+      if (event.target.closest('button, a, input, select, textarea')) return;
+      const row = rowElFor(rows, rowEl);
+      if (!row) return;
+      pointerDrag = {
+        row,
+        rowEl,
+        startX: event.clientX,
+        startY: event.clientY,
+        active: false,
+        targetEl: null,
+      };
+      rowEl.setPointerCapture?.(event.pointerId);
+    });
+
+    rowEl.addEventListener('pointermove', (event) => {
+      if (!pointerDrag || pointerDrag.rowEl !== rowEl) return;
+      const dx = Math.abs(event.clientX - pointerDrag.startX);
+      const dy = Math.abs(event.clientY - pointerDrag.startY);
+      if (!pointerDrag.active && Math.max(dx, dy) < 8) return;
+      pointerDrag.active = true;
+      event.preventDefault();
+      rowEl.classList.add('is-dragging');
+      const targetEl = document.elementFromPoint(event.clientX, event.clientY)?.closest?.('.name-row[draggable="true"]');
+      namesRows.querySelectorAll('.is-drop-target').forEach((entry) => entry.classList.remove('is-drop-target'));
+      if (!targetEl || targetEl === rowEl) {
+        pointerDrag.targetEl = null;
+        return;
+      }
+      const target = rowElFor(rows, targetEl);
+      if (!targetForReorder(pointerDrag.row, target) || !canReorderRows(pointerDrag.row, target)) {
+        pointerDrag.targetEl = null;
+        return;
+      }
+      pointerDrag.targetEl = targetEl;
+      targetEl.classList.add('is-drop-target');
+    });
+
+    rowEl.addEventListener('pointerup', async (event) => {
+      if (!pointerDrag || pointerDrag.rowEl !== rowEl) return;
+      rowEl.releasePointerCapture?.(event.pointerId);
+      rowEl.classList.remove('is-dragging');
+      namesRows.querySelectorAll('.is-drop-target').forEach((entry) => entry.classList.remove('is-drop-target'));
+      const finishedDrag = pointerDrag;
+      pointerDrag = null;
+      if (!finishedDrag.active || !finishedDrag.targetEl) return;
+      rowEl.dataset.justDragged = 'true';
+      setTimeout(() => {
+        rowEl.dataset.justDragged = '';
+      }, 0);
+      const target = rowElFor(rows, finishedDrag.targetEl);
+      const reorderTarget = targetForReorder(finishedDrag.row, target);
+      if (!reorderTarget || Number(finishedDrag.row.item.id) === Number(reorderTarget.item.id)) return;
+      await reorderVisibleRows(finishedDrag.row, reorderTarget);
+    });
+
+    rowEl.addEventListener('pointercancel', (event) => {
+      if (!pointerDrag || pointerDrag.rowEl !== rowEl) return;
+      rowEl.releasePointerCapture?.(event.pointerId);
+      rowEl.classList.remove('is-dragging');
+      namesRows.querySelectorAll('.is-drop-target').forEach((entry) => entry.classList.remove('is-drop-target'));
+      pointerDrag = null;
+    });
+
     rowEl.addEventListener('dragstart', (event) => {
       if (event.target.closest('button, a, input, select, textarea')) {
         event.preventDefault();
