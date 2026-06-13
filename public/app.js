@@ -55,6 +55,7 @@ const agendaDialog = $('#agendaDialog');
 const agendaRows = $('#agendaRows');
 const agendaSummary = $('#agendaSummary');
 const hoverTooltip = $('#hoverTooltip');
+const toolsMenu = document.querySelector('.tools-menu');
 
 let editor = { type: null, id: null, addMore: false };
 
@@ -117,6 +118,7 @@ function bindGlobalEvents() {
   $('#resetFiltersBtn').addEventListener('click', resetFilters);
   $('#debugBtn').addEventListener('click', runDebug);
   $('#copyDebugBtn').addEventListener('click', copyDebug);
+  document.addEventListener('click', closeToolsMenuOnOutsideClick);
 
   $('#addClientBtn').addEventListener('click', () => openEditor('client'));
   $('#addProjectBtn').addEventListener('click', () => openEditor('project'));
@@ -287,6 +289,11 @@ function resetFilters() {
   $('#clientFilter').value = '';
   $('#statusFilter').value = '';
   render();
+}
+
+function closeToolsMenuOnOutsideClick(event) {
+  if (!toolsMenu?.open || toolsMenu.contains(event.target)) return;
+  toolsMenu.open = false;
 }
 
 function showAppError(message) {
@@ -472,6 +479,11 @@ function renderNames(rows) {
     const draggable = canDrag ? ' draggable="true"' : '';
     const rowData = `data-row-type="${row.type}" data-id="${item.id}"`;
     const childToggle = collapseButton(row);
+    const isFocusedClient = state.filters.client === String(item.id);
+    const clientFocusAction = row.type === 'client' ? `
+          <button class="mini-btn icon-edit icon-present" data-focus-client="${item.id}" aria-label="${isFocusedClient ? 'Show all clients' : `Show only ${escapeAttr(row.text)}`}">
+            <i class="fa-solid fa-eye" aria-hidden="true"></i>
+          </button>` : '';
     return `
       <div class="name-row row-${row.type}" ${rowData}${draggable}>
         <div class="name-main">
@@ -481,6 +493,7 @@ function renderNames(rows) {
           ${meta ? `<span class="meta">${escapeHtml(meta)}</span>` : ''}
         </div>
         <div class="row-actions">
+          ${clientFocusAction}
           <button class="mini-btn icon-edit" data-edit="${row.type}" data-id="${item.id}" aria-label="Edit ${escapeAttr(row.text)}">
             <i class="fa-solid fa-pen" aria-hidden="true"></i>
           </button>
@@ -492,11 +505,21 @@ function renderNames(rows) {
   namesRows.querySelectorAll('[data-edit]').forEach((button) => {
     button.addEventListener('click', () => openEditor(button.dataset.edit, Number(button.dataset.id)));
   });
+  namesRows.querySelectorAll('[data-focus-client]').forEach((button) => {
+    button.addEventListener('click', () => toggleClientFocus(button.dataset.focusClient));
+  });
   namesRows.querySelectorAll('[data-collapse]').forEach((button) => {
     button.addEventListener('click', () => toggleCollapse(button.dataset.collapse, Number(button.dataset.id)));
   });
   bindListReorder(rows);
   bindHoverTooltips(namesRows, rows);
+}
+
+function toggleClientFocus(clientId) {
+  const nextClientId = state.filters.client === String(clientId) ? '' : String(clientId);
+  state.filters.client = nextClientId;
+  $('#clientFilter').value = nextClientId;
+  render();
 }
 
 function rowMeta(row) {
