@@ -1,6 +1,6 @@
 # Client Gantt Personal Use License
 
-Copyright (c) 2026 Anastasia Che.
+Copyright (c) 2026 Anastasia Chetvertukhina.
 
 This project is source-available, but it is not open source under an OSI-approved license.
 
