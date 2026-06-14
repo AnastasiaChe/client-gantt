@@ -28,7 +28,7 @@ You may not:
 
 You may use the software to manage your own client projects.
 
-You may not sell the software itself to a client, install it for a client as a paid deliverable, or charge for access to a hosted copy without written permission from Anastasia Che.
+You may not sell the software itself to a client, install it for a client as a paid deliverable, or charge for access to a hosted copy without written permission from Anastasia Chetvertukhina.
 
 ## No Warranty
 
