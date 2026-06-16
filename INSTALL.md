@@ -101,6 +101,9 @@ ADD COLUMN sort_order INT NOT NULL DEFAULT 0 AFTER notes;
 UPDATE clients
 SET sort_order = id * 10
 WHERE sort_order = 0;
+
+ALTER TABLE projects
+ADD COLUMN hourly_rate DECIMAL(10,2) NULL AFTER budget_hours;
 ```
 
 ## Config
@@ -208,11 +211,20 @@ Projects can have:
 
 ```text
 budget_hours
+hourly_rate
 daily_capacity_hours
 ends_on
 ```
 
 If a project has no `ends_on`, it is treated as ongoing. Budget and max hours/day still work, but the app does not show a deadline-based `need Xh/day` target. Because support retainers are not magic; they just refuse to end.
+
+The Summary modal uses `hourly_rate` to calculate forecast amounts:
+
+```text
+task hours in period * project hourly_rate
+```
+
+The yearly forecast covers the whole calendar year, for example `This year (2026)`.
 
 Daily load colors:
 

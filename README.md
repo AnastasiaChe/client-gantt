@@ -52,11 +52,11 @@ For manual setup, see `INSTALL.md`.
 - Save and Add More for adding project/stage/task batches.
 - CRM URL fields for stages and tasks.
 - Search and filters.
-- Today's agenda modal with active tasks and planned hours for the day.
+- Summary modal with today's agenda and financial forecast.
 - Gear menu for CSV/JSON backups and debug tools.
 - Task `estimated_hours`.
 - Task planning modes: fixed total hours or automatic total from hours/day.
-- Project budget hours and max hours/day.
+- Project budget hours, hourly rate, and max hours/day.
 - Ongoing projects without a deadline.
 - Daily load strip based only on active tasks.
 - Compact hour labels in the dense timeline.
