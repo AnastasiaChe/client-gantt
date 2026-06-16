@@ -892,7 +892,8 @@ dialog::backdrop { background: var(--overlay); }
   font-weight: 700;
   box-shadow: none;
 }
-.agenda-tab.is-active {
+.agenda-tab.is-active,
+.agenda-tab:hover {
   color: var(--surface);
   background: linear-gradient(180deg, #669dc7 0%, #3383c0 100%);
 }
@@ -1230,6 +1231,7 @@ dialog::backdrop { background: var(--overlay); }
   border-radius: var(--button-radius);
   cursor: pointer;
 }
+.radio-chip:hover span,
 .radio-chip input:checked + span {
   background: linear-gradient(180deg, var(--primary-light) 0%, var(--primary) 100%);
   color: #fff;
