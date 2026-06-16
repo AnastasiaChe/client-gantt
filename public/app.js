@@ -406,12 +406,14 @@ function renderAgenda() {
     `).join('')
     : '<tr><td class="agenda-empty" colspan="4">No active tasks planned for today.</td></tr>';
 
-  forecastRows.innerHTML = forecast.map((item, index) => `
-    <tr class="${index % 2 === 0 ? 'agenda-alt' : ''}">
-      <td>${escapeHtml(item.label)}</td>
-      <td>${formatHoursCompact(item.hours)}</td>
-      <td>${formatMoney(item.amount)}</td>
-    </tr>
+  forecastRows.innerHTML = forecast.map((item) => `
+    <article class="forecast-card">
+      <p class="forecast-period">${escapeHtml(item.label)}</p>
+      <div class="forecast-values">
+        <strong class="forecast-amount">${formatMoney(item.amount)} RUB</strong>
+        <strong class="forecast-hours">${formatHoursCompact(item.hours)} hours</strong>
+      </div>
+    </article>
   `).join('');
   switchAgendaTab(agendaMode);
 }

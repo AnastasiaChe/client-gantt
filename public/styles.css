@@ -856,7 +856,7 @@ dialog::backdrop { background: var(--overlay); }
 .agenda-panel {
   padding: 27px 30px 0;
   display: grid;
-  gap: 20px;
+  gap: 10px;
   position: relative;
 }
 .agenda-panel header {
@@ -943,15 +943,6 @@ dialog::backdrop { background: var(--overlay); }
 .agenda-col-hours {
   width: 8.5%;
 }
-.forecast-col-period {
-  width: 50%;
-}
-.forecast-col-hours {
-  width: 31%;
-}
-.forecast-col-amount {
-  width: 19%;
-}
 .agenda-table th,
 .agenda-table td {
   box-sizing: border-box;
@@ -983,15 +974,38 @@ dialog::backdrop { background: var(--overlay); }
   white-space: nowrap;
   font-weight: 700;
 }
-.forecast-table td:nth-child(2),
-.forecast-table th:nth-child(2),
-.forecast-table td:nth-child(3),
-.forecast-table th:nth-child(3) {
-  text-align: right;
+.forecast-cards {
+  display: flex;
+  gap: 60px;
+  padding: 27px 30px 37px;
+}
+.forecast-card {
+  display: flex;
+  flex: 0 0 205px;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+  color: var(--text);
+}
+.forecast-period {
+  margin: 0;
+  font-size: 16px;
+  line-height: normal;
+  font-weight: 400;
+}
+.forecast-values {
+  display: flex;
+  flex-direction: column;
+}
+.forecast-amount {
+  font-size: 25px;
+  line-height: normal;
+  font-weight: 900;
   white-space: nowrap;
 }
-.forecast-table td:nth-child(2),
-.forecast-table td:nth-child(3) {
+.forecast-hours {
+  font-size: 16px;
+  line-height: normal;
   font-weight: 900;
 }
 .agenda-empty {
@@ -1501,7 +1515,7 @@ dialog::backdrop { background: var(--overlay); }
   }
   .agenda-panel {
     padding: 27px 26px 0;
-    gap: 24px;
+    gap: 10px;
     overflow: hidden;
   }
   .agenda-panel header {
@@ -1591,35 +1605,24 @@ dialog::backdrop { background: var(--overlay); }
     justify-self: end;
     font-weight: 700;
   }
-  .forecast-table tr {
-    min-height: 54px;
-    grid-template-columns: minmax(0, 1fr) 54px 82px;
-    grid-template-rows: 1fr;
-    align-items: center;
-    gap: 8px;
-    padding: 14px 30px;
+  .forecast-cards {
+    flex-direction: column;
+    gap: 30px;
+    padding: 31px 26px 36px;
   }
-  .forecast-table td:nth-child(1) {
-    grid-column: 1;
-    grid-row: 1;
-    width: auto;
-    min-width: 0;
+  .forecast-card {
+    flex: 0 0 auto;
+    width: 205px;
+    gap: 18px;
   }
-  .forecast-table td:nth-child(2) {
-    grid-column: 2;
-    grid-row: 1;
-    width: 54px;
-    text-align: right;
-    justify-self: end;
-    font-weight: 900;
+  .forecast-period {
+    font-size: 16px;
   }
-  .forecast-table td:nth-child(3) {
-    grid-column: 3;
-    grid-row: 1;
-    width: 82px;
-    text-align: right;
-    justify-self: end;
-    font-weight: 900;
+  .forecast-amount {
+    font-size: 25px;
+  }
+  .forecast-hours {
+    font-size: 16px;
   }
   .name-row[draggable="true"] {
     touch-action: none;
