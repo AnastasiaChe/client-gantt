@@ -16,6 +16,7 @@ CREATE TABLE projects (
     starts_on DATE NULL,
     ends_on DATE NULL,
     budget_hours DECIMAL(7,2) NULL,
+    hourly_rate DECIMAL(10,2) NULL,
     daily_capacity_hours DECIMAL(6,2) NULL,
     notes TEXT NULL,
     sort_order INT NOT NULL DEFAULT 0,
@@ -70,8 +71,8 @@ CREATE TABLE tasks (
 INSERT INTO clients (name, contact, notes, sort_order) VALUES
 ('Demo Client', 'owner@example.com', 'Remove this client after setup.', 10);
 
-INSERT INTO projects (client_id, name, status, starts_on, ends_on, budget_hours, daily_capacity_hours, notes, sort_order) VALUES
-(1, 'Website redesign', 'in_progress', CURRENT_DATE, DATE_ADD(CURRENT_DATE, INTERVAL 28 DAY), 60, 4, 'Demo project.', 10);
+INSERT INTO projects (client_id, name, status, starts_on, ends_on, budget_hours, hourly_rate, daily_capacity_hours, notes, sort_order) VALUES
+(1, 'Website redesign', 'in_progress', CURRENT_DATE, DATE_ADD(CURRENT_DATE, INTERVAL 28 DAY), 60, 2500, 4, 'Demo project.', 10);
 
 INSERT INTO stages (project_id, name, status, starts_on, ends_on, color, description, sort_order) VALUES
 (1, 'Audit and structure', 'in_progress', CURRENT_DATE, DATE_ADD(CURRENT_DATE, INTERVAL 7 DAY), '#2563eb', 'UX audit, offer, page structure.', 10),

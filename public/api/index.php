@@ -142,7 +142,7 @@ function routeCrud(PDO $pdo, string $action, string $method): void
     }
 
     if ($action === 'projects') {
-        crud($pdo, 'projects', $id, $method, ['client_id', 'name', 'status', 'starts_on', 'ends_on', 'budget_hours', 'daily_capacity_hours', 'notes', 'sort_order'], ['client_id', 'name']);
+        crud($pdo, 'projects', $id, $method, ['client_id', 'name', 'status', 'starts_on', 'ends_on', 'budget_hours', 'hourly_rate', 'daily_capacity_hours', 'notes', 'sort_order'], ['client_id', 'name']);
     }
 
     if ($action === 'stages') {
@@ -244,14 +244,15 @@ function sanitize(string $table, array $input, array $fields, array $required, b
             $value = $value === null ? null : (int) $value;
         }
 
-        if (in_array($field, ['estimated_hours', 'hours_per_day', 'budget_hours', 'daily_capacity_hours'], true)) {
+        if (in_array($field, ['estimated_hours', 'hours_per_day', 'budget_hours', 'hourly_rate', 'daily_capacity_hours'], true)) {
             $value = $value === null ? 0 : (float) $value;
-            if ($value < 0 || $value > 9999) {
-                fail('Hours must be between 0 and 9999', 422);
+            $max = $field === 'hourly_rate' ? 9999999 : 9999;
+            if ($value < 0 || $value > $max) {
+                fail($field === 'hourly_rate' ? 'Hourly rate must be between 0 and 9999999' : 'Hours must be between 0 and 9999', 422);
             }
         }
 
-        if (in_array($field, ['budget_hours', 'daily_capacity_hours'], true) && $input[$field] === '') {
+        if (in_array($field, ['budget_hours', 'hourly_rate', 'daily_capacity_hours'], true) && $input[$field] === '') {
             $value = null;
         }
 

@@ -54,12 +54,22 @@ const saveMoreBtn = $('#saveMoreBtn');
 const agendaDialog = $('#agendaDialog');
 const agendaRows = $('#agendaRows');
 const agendaSummary = $('#agendaSummary');
+const forecastRows = $('#forecastRows');
+const agendaTabs = {
+  today: $('#agendaTabToday'),
+  forecast: $('#agendaTabForecast'),
+};
+const agendaPanels = {
+  today: $('#agendaTodayPanel'),
+  forecast: $('#agendaForecastPanel'),
+};
 const hoverTooltip = $('#hoverTooltip');
 const toolsMenu = document.querySelector('.tools-menu');
 const addMenu = document.querySelector('.add-menu');
 const filtersPanel = document.querySelector('.filters');
 
 let editor = { type: null, id: null, addMore: false };
+let agendaMode = 'today';
 
 document.addEventListener('DOMContentLoaded', boot);
 
@@ -117,6 +127,8 @@ function bindGlobalEvents() {
   $('#todayBtn').addEventListener('click', scrollToday);
   $('#agendaBtn').addEventListener('click', openAgenda);
   $('#closeAgendaBtn').addEventListener('click', () => agendaDialog.close());
+  agendaTabs.today.addEventListener('click', () => switchAgendaTab('today'));
+  agendaTabs.forecast.addEventListener('click', () => switchAgendaTab('forecast'));
   $('#resetFiltersBtn').addEventListener('click', resetFilters);
   $('#filterToggleBtn').addEventListener('click', () => filtersPanel.classList.toggle('is-open'));
   $('#debugBtn').addEventListener('click', runDebug);
@@ -368,9 +380,15 @@ async function copyDebug() {
 }
 
 function openAgenda() {
+  renderAgenda();
+  agendaDialog.showModal();
+}
+
+function renderAgenda() {
   const today = toIso(new Date());
   const items = todayAgendaItems(today);
   const totalHours = items.reduce((sum, item) => sum + item.hours, 0);
+  const forecast = financialForecastItems(today);
 
   agendaSummary.innerHTML = `
     <span>${escapeHtml(today)}</span>
@@ -387,7 +405,27 @@ function openAgenda() {
       </tr>
     `).join('')
     : '<tr><td class="agenda-empty" colspan="4">No active tasks planned for today.</td></tr>';
-  agendaDialog.showModal();
+
+  forecastRows.innerHTML = forecast.map((item, index) => `
+    <tr class="${index % 2 === 0 ? 'agenda-alt' : ''}">
+      <td>${escapeHtml(item.label)}</td>
+      <td>${formatHoursCompact(item.hours)}</td>
+      <td>${formatMoney(item.amount)}</td>
+    </tr>
+  `).join('');
+  switchAgendaTab(agendaMode);
+}
+
+function switchAgendaTab(mode) {
+  agendaMode = mode;
+  Object.entries(agendaTabs).forEach(([key, tab]) => {
+    const active = key === mode;
+    tab.classList.toggle('is-active', active);
+    tab.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+  Object.entries(agendaPanels).forEach(([key, panel]) => {
+    panel.classList.toggle('is-hidden', key !== mode);
+  });
 }
 
 function todayAgendaItems(todayIso) {
@@ -404,6 +442,64 @@ function todayAgendaItems(todayIso) {
     })
     .filter((item) => item.hours > 0)
     .sort((a, b) => a.client.localeCompare(b.client) || a.project.localeCompare(b.project) || a.task.localeCompare(b.task));
+}
+
+function financialForecastItems(todayIso) {
+  const today = parseDate(todayIso);
+  const weekStart = startOfWeek(today);
+  const weekEnd = addDays(weekStart, 6);
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  const yearStart = new Date(today.getFullYear(), 0, 1);
+  const yearEnd = new Date(today.getFullYear(), 11, 31);
+
+  return [
+    {
+      label: `This week (${shortDate(weekStart)}-${shortDate(weekEnd)})`,
+      ...forecastForPeriod(weekStart, weekEnd),
+    },
+    {
+      label: `This month (${today.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })})`,
+      ...forecastForPeriod(monthStart, monthEnd),
+    },
+    {
+      label: `This year (${today.getFullYear()})`,
+      ...forecastForPeriod(yearStart, yearEnd),
+    },
+  ];
+}
+
+function forecastForPeriod(periodStart, periodEnd) {
+  return state.rows
+    .filter((row) => row.type === 'task' && row.item.status !== 'done')
+    .reduce((totals, row) => {
+      const task = row.item;
+      if (!task.starts_on || !task.ends_on) return totals;
+      const taskStart = parseDate(task.starts_on);
+      const taskEnd = parseDate(task.ends_on);
+      const overlapStart = taskStart > periodStart ? taskStart : periodStart;
+      const overlapEnd = taskEnd < periodEnd ? taskEnd : periodEnd;
+      if (overlapEnd < overlapStart) return totals;
+
+      const duration = daysBetween(taskStart, taskEnd) + 1;
+      const overlapDays = daysBetween(overlapStart, overlapEnd) + 1;
+      const hours = taskHoursPerDay(task, duration) * overlapDays;
+      const rate = Number(row.project?.hourly_rate || 0);
+      totals.hours += hours;
+      totals.amount += hours * rate;
+      return totals;
+    }, { hours: 0, amount: 0 });
+}
+
+function startOfWeek(date) {
+  const copy = new Date(date);
+  const day = copy.getDay() || 7;
+  copy.setDate(copy.getDate() - day + 1);
+  return copy;
+}
+
+function shortDate(date) {
+  return date.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
 }
 
 function taskCoversDate(task, iso) {
@@ -482,6 +578,10 @@ function formatHours(hours) {
 function formatHoursCompact(hours) {
   if (!hours) return '0';
   return `${Number.isInteger(hours) ? hours : hours.toFixed(1)}`;
+}
+
+function formatMoney(amount) {
+  return Math.round(amount).toLocaleString('ru-RU').replace(/\u00a0/g, ' ');
 }
 
 function renderNames(rows) {
@@ -1238,9 +1338,10 @@ function fieldsFor(type, item) {
     return [
       { name: 'client_id', label: 'Client', type: 'select', required: true, options: state.clients, value: item.client_id, wide: true },
       { name: 'name', label: 'Project Title', required: true, value: item.name, wide: true },
-      { name: 'budget_hours', label: 'Total hours', type: 'number', min: 0, step: 0.25, value: item.budget_hours, group: 'third' },
-      { name: 'daily_capacity_hours', label: 'Max hours/day', type: 'number', min: 0, step: 0.25, value: item.daily_capacity_hours, group: 'third' },
-      { ...commonStatus, group: 'third' },
+      { name: 'budget_hours', label: 'Total hours', type: 'number', min: 0, step: 0.25, value: item.budget_hours, group: 'quarter' },
+      { name: 'hourly_rate', label: 'Hourly rate, RUB', type: 'number', min: 0, step: 1, value: item.hourly_rate, group: 'quarter' },
+      { name: 'daily_capacity_hours', label: 'Max hours/day', type: 'number', min: 0, step: 0.25, value: item.daily_capacity_hours, group: 'quarter' },
+      { ...commonStatus, group: 'quarter' },
       { name: 'starts_on', label: 'Start', type: 'date', value: item.starts_on, group: 'half' },
       { name: 'ends_on', label: 'End', type: 'date', value: item.ends_on, group: 'half' },
       { name: 'notes', label: 'Notes', type: 'textarea', wide: true, value: item.notes, placeholder: 'Add your notes here' },
@@ -1420,6 +1521,7 @@ function nextDefaults(type, previous) {
       starts_on: previous.starts_on,
       ends_on: previous.ends_on,
       budget_hours: previous.budget_hours,
+      hourly_rate: previous.hourly_rate,
       daily_capacity_hours: previous.daily_capacity_hours,
     };
   }

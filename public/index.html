@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;500;600;700;800;900&display=swap">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-  <link rel="stylesheet" href="styles.css?v=20260613-0218">
+  <link rel="stylesheet" href="styles.css?v=20260616-forecast">
 </head>
 <body>
   <main id="login" class="login is-hidden">
@@ -38,7 +38,7 @@
         <h1>Projects Gantt</h1>
         <button id="agendaBtn" class="secondary agenda-trigger" type="button">
           <i class="fa-solid fa-list" aria-hidden="true"></i>
-          Today’s Agenda
+          Summary
         </button>
       </div>
       <div class="top-actions">
@@ -143,32 +143,57 @@
   <dialog id="agendaDialog">
     <section class="agenda-panel">
       <header>
-        <h2>What's Up for Today</h2>
-        <div id="agendaSummary" class="agenda-summary"></div>
+        <h2>Summary</h2>
         <button type="button" class="icon-button" id="closeAgendaBtn" aria-label="Close">×</button>
       </header>
-      <div class="agenda-table-wrap">
-        <table class="agenda-table">
-          <colgroup>
-            <col class="agenda-col-client">
-            <col class="agenda-col-project">
-            <col class="agenda-col-task">
-            <col class="agenda-col-hours">
-          </colgroup>
-          <thead>
-            <tr>
-              <th>Client</th>
-              <th>Project</th>
-              <th>Task</th>
-              <th>Hours</th>
-            </tr>
-          </thead>
-          <tbody id="agendaRows"></tbody>
-        </table>
+      <div class="agenda-tabs" role="tablist" aria-label="Summary sections">
+        <button id="agendaTabToday" class="agenda-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="agendaTodayPanel">What’s Up for Today</button>
+        <button id="agendaTabForecast" class="agenda-tab" type="button" role="tab" aria-selected="false" aria-controls="agendaForecastPanel">Financial Forecast</button>
+      </div>
+      <div id="agendaTodayPanel" class="agenda-tab-panel" role="tabpanel" aria-labelledby="agendaTabToday">
+        <div id="agendaSummary" class="agenda-summary"></div>
+        <div class="agenda-table-wrap">
+          <table class="agenda-table agenda-today-table">
+            <colgroup>
+              <col class="agenda-col-client">
+              <col class="agenda-col-project">
+              <col class="agenda-col-task">
+              <col class="agenda-col-hours">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Client</th>
+                <th>Project</th>
+                <th>Task</th>
+                <th>Hours</th>
+              </tr>
+            </thead>
+            <tbody id="agendaRows"></tbody>
+          </table>
+        </div>
+      </div>
+      <div id="agendaForecastPanel" class="agenda-tab-panel is-hidden" role="tabpanel" aria-labelledby="agendaTabForecast">
+        <div class="agenda-table-wrap">
+          <table class="agenda-table forecast-table">
+            <colgroup>
+              <col class="forecast-col-period">
+              <col class="forecast-col-hours">
+              <col class="forecast-col-amount">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Period</th>
+                <th>Hours</th>
+                <th>Amount, RUB</th>
+              </tr>
+            </thead>
+            <tbody id="forecastRows"></tbody>
+          </table>
+        </div>
       </div>
     </section>
   </dialog>
 
-  <script src="app.js?v=20260613-0218"></script>
+  <script src="app.js?v=20260616-forecast"></script>
 </body>
 </html>
